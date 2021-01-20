@@ -1,0 +1,560 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based coping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "1.1.0"
+  title: E-Commerce Cargamos API Manager
+  description: |
+    </br>
+    API to Manage Van vehicles to Urbvan.
+    CRUD functions can be applied to manage the data.
+    </br>
+    </br>
+  contact: 
+      name: API Support
+      url: https://github.com/jorgeMorfinezM/urbvan_test_microservice/blob/main/README.md
+      email: jorge.morfinez.m@gmail.com
+  termsOfService: https://www.ofix.com.mx/conditionsofuse
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  
+host:
+  localhost:5000
+basePath: "/api/urbvan"
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+# components:
+#    securitySchemes:
+#    bearerAuth:            # arbitrary name for the security scheme
+#      type: http
+#      scheme: bearer
+#      bearerFormat: JWT 
+securityDefinitions:
+  OAuth2:
+    description: Contiene la llamada a autenticar la API para obtener el Bearer Token 
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: http://localhost:5000/api/urbvan/authorization/
+    tokenUrl: http://127.0.0.1:5000/api/urbvan/authorization/
+    
+# Describe your paths here
+tags: 
+  - name: "Search Van by Status"
+    description: "Endpoint to looking for Van data by status defined"
+  - name: "Manage Van"
+    description: "Endpoint to manage Van data using: add, search, get, delete and update methods to and from the database"
+  - name: "Authorization"
+    description: "Endpoint to get Token Bearer POST the username and password registered"
+paths:
+  /vehicle/van/status/:
+    get:
+      tags:
+        - "Search Van by Status"
+      description:
+        Get the list of Van vehicles looking for by Status.
+      parameters:
+        - name: SearchStatus
+          in: body
+          description: Payload get the list of the Vans by valid status looking for.
+          required: true
+          schema:
+            $ref: '#/definitions/SearchStatus'
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/VanVehicle'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+
+  /vehicle/van/:
+    # This is a HTTP operation
+    get:
+      tags:
+        - "Manage Van"
+      description:
+        Get the Van data from Van UUID.
+      # This is array of GET operation parameters:
+      parameters:
+        - name: SearchVanId
+          in: body
+          description: Payload to get the data of a Van by UUID.
+          required: true
+          schema:
+            $ref: '#/definitions/SearchVanId'
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/VanVehicle'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+    post:
+      tags:
+        - "Manage Van"
+      description:
+        Add Van vaslid data to register a new Van.
+      parameters:
+        - name: postVan
+          in: body
+          description: Payload to insert a Van record in database.
+          required: true
+          schema:
+            $ref: '#/definitions/postVan'
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PostVanResponse'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+    put:
+      tags:
+        - "Manage Van"
+      description:
+        Updates the Van data of a particular record in the database.
+      parameters:
+        - name: putVan
+          in: body
+          description: Payload to update Van valid data.
+          required: true
+          schema:
+            $ref: '#/definitions/putVan'
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/putVanResponse'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+    delete:
+      tags:
+        - "Manage Van"
+      description:
+        Deletes a record of a Van from the database.
+      parameters:
+        - name: deleteVan
+          in: body
+          description: Payload to looking for and delete a specific record.
+          required: true
+          schema:
+            $ref: '#/definitions/deleteVan'
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/deleteVanResponse'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+
+  /authorization/:
+    post:
+      tags:
+        - "Authorization"
+      description:
+        Get Bearer Token by username, password and RFC user to authenticate to the API endpoints.
+      parameters:
+        - name: Authorization
+          in: body
+          description: Payload with authentication credentials to API.
+          required: true
+          schema:
+            $ref: '#/definitions/Authorization'
+      responses:
+        200:
+          description: Successful response Token Bearer
+          schema:
+            title: TokenRequest
+            type: array
+            items:
+              $ref: '#/definitions/TokenRequest'
+        404:
+          description: Page Not Found
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Request Data Conflict
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        401:
+          description: 401 Unauthorized
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+        500:
+          description: Server Error
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Error'
+
+definitions:
+  SearchStatus:
+    allOf:
+      - $ref: '#/definitions/SearchStatus'
+      - required:
+          - statusVan
+        type: "object"
+        properties:
+          StatusVan:
+            type: string
+
+  VanVehicle:
+    allOf:
+      - $ref: '#/definitions/VanVehicle'
+      - required:
+          - UUID
+          - Plate
+          - EconomicNumber
+          - SeatsNumber
+          - Status
+          - CreationDate
+          - LastUpdateDate
+        type: "object"
+        properties:
+          UUID:
+            type: string
+          Plate:
+            type: string
+          EconomicNumber:
+            type: string
+          SeatsNumber:
+            type: string
+          Status:
+            type: string
+          CreationDate:
+            type: string
+          LastUpdateDate:
+            type: string
+
+  SearchVanId:
+    allOf:
+      - $ref: '#/definitions/SearchVanId'
+      - required:
+        - uuid_van
+        type: "object"
+        properties:
+          uuid_van:
+            type: string
+            format: string
+
+  postVan:
+    allOf:
+      - $ref: '#/definitions/postVan'
+      - required:
+          - plate_van
+          - economic_number
+          - seats_number
+          - status
+        type: "object"
+        properties:
+          plate_van:
+            type: string
+          economic_number:
+            type: string
+          seats_number:
+            type: integer
+            format: int64
+          status:
+            type: string
+
+  PostVanResponse:
+    allOf:
+      - $ref: '#/definitions/PostVanResponse'
+      - required:
+          - UUID
+          - Plate
+          - EconomicNumber
+          - SeatsNumber
+          - Status
+          - CreationDate
+          - Message
+        type: "object"
+        properties:
+          UUID:
+            type: string
+          Plate:
+            type: string
+          EconomicNumber:
+            type: string
+          SeatsNumber:
+            type: string
+          Status:
+            type: string
+          CreationDate:
+            type: string
+          Message:
+            type: string
+
+  putVan:
+    allOf:
+      - $ref: '#/definitions/putVan'
+      - required:
+          - uuid_van
+          - plate_van
+          - economic_number
+          - seats_number
+          - status
+        type: "object"
+        properties:
+          uuid_van:
+            type: string
+          plate_van:
+            type: string
+          economic_number:
+            type: string
+          seats_number:
+            type: integer
+            format: int64
+          status:
+            type: string
+
+  putVanResponse:
+    allOf:
+      - $ref: '#/definitions/putVanResponse'
+      - required:
+          - UUID
+          - Plate
+          - EconomicNumber
+          - SeatsNumber
+          - Status
+          - LastUpdateDate
+          - Message
+        type: "object"
+        properties:
+          UUID:
+            type: string
+          Plate:
+            type: string
+          EconomicNumber:
+            type: string
+          SeatsNumber:
+            type: integer
+            format: int64
+          Status:
+            type: string
+          LastUpdateDate:
+            type: string
+          Message:
+            type: string
+
+  deleteVan:
+    allOf:
+      - $ref: '#/definitions/deleteVan'
+      - required:
+          - uuid_van
+          - plate_van
+        type: "object"
+        properties:
+          uuid_van:
+            type: string
+          plate_van:
+            type: string
+
+  deleteVanResponse:
+    allOf:
+      - $ref: '#/definitions/deleteVanResponse'
+      - required:
+        - UUID
+        - Plate
+        - Message
+        type: "object"
+        properties:
+          UUID:
+            type: string
+          Plate:
+            type: string
+          Message:
+            type: string
+
+  Error:
+    allOf:
+      - $ref: '#/definitions/Error'
+      - required:
+        - error_code
+        - error_message
+        type: "object"
+        properties:
+          error_code:
+            type: integer
+            format: int32
+          error_message:
+            type: string
+
+  Authorization:
+    allOf:
+      - $ref: '#/definitions/Authorization'
+      - required:
+        - username
+        - password
+        - rfc_client
+        type: "object"
+        properties:
+          username:
+            type: string
+          password:
+            type: string
+          rfc_client:
+            type: string
+
+  TokenRequest:
+    allOf:
+      - $ref: '#/definitions/TokenRequest'
+      - required:
+        - message
+        - access_token
+        - refresh_token
+        type: "object"
+        properties:
+          message: 
+            type: string
+          access_token:
+            type: string
+          refresh_token:
+            type: string
