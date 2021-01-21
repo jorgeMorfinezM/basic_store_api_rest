@@ -142,7 +142,7 @@ def update_van_data_endpoint(uuid_van, plates_van, economic_number_van, seats_va
 
     table_name = cfg['DB_OBJECTS']['VAN_TABLE']
 
-    van_updated = update_van_data(table_name, uuid_van, plates_van, economic_number_van, seats_van, status_van)
+    van_updated = update_store_data(table_name, uuid_van, plates_van, economic_number_van, seats_van, status_van)
 
     return van_updated
 
@@ -155,7 +155,7 @@ def delete_van_vehicle(uuid_van, plate_van):
 
     table_name = cfg['DB_OBJECTS']['VAN_TABLE']
 
-    van_delete_response = delete_van_data(table_name, uuid_van, plate_van)
+    van_delete_response = delete_store_data(table_name, uuid_van, plate_van)
 
     van_delete_msg = json.loads(van_delete_response)
 
@@ -196,7 +196,7 @@ def manage_van_requested_data(data_van):
 
     van_data_response = []
 
-    urbvan_obj = UrbvanModelDb()
+    urbvan_obj = StoreModelDb()
 
     try:
 

@@ -2,7 +2,7 @@
 """
 Requires Python 3.8 or later
 
-PostgreSQL DB backend (db-oracle).
+PostgreSQL DB backend.
 
 Each one of the CRUD operations should be able to open a database connection if
 there isn't already one available (check if there are any issues with this).
@@ -42,6 +42,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from constants.constants import Constants as Const
 from db_controller import mvc_exceptions as mvc_exc
 from logger_controller.logger_control import *
+from model.StoreModel import StoreModel
+from model.ProductModel import ProductModel
 
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
@@ -129,7 +131,7 @@ def create_cursor(conn):
     r"""
     Create an object statement to transact to the database and manage his data.
 
-    :param conn: Objecto connector to the database.
+    :param conn: Object to connect to the database.
     :return cursor: Object statement to transact to the database with the connection.
 
     """
@@ -167,22 +169,6 @@ def close_cursor(cursor):
 
     if cursor is not None:
         cursor.close()
-
-
-# Deprecated
-def get_systimestamp_date(session):
-    r"""
-    Function deprecated. Do not use it.
-
-    :param session:
-    :return:
-    """
-
-    last_updated_date_column = session.execute('SELECT systimestamp from dual').scalar()
-
-    logger.info('Timestamp from DUAL: %s', last_updated_date_column)
-
-    return last_updated_date_column
 
 
 def get_datenow_from_db():
@@ -264,7 +250,7 @@ def exists_data_row(table_name, column_name, column_filter1, value1, column_filt
     r"""
     Transaction that validates the existence and searches for a certain record in the database.
 
-    :param table_name: The table name to looking for data van.
+    :param table_name: The table name to looking for data.
     :param column_name: The name of the column to find existence.
     :param column_filter1: The name of the first column filter to looking for data.
     :param value1: The value of the first filter to looking for data.
@@ -323,7 +309,7 @@ def validate_transaction(table_name,
     r"""
     Transaction that validates the existence and searches for a certain record in the database.
 
-    :param table_name: The table name to looking for data van.
+    :param table_name: The table name to looking for data.
     :param column_name: The name of the column to find existence.
     :param column_filter1: The name of the first column filter to looking for data.
     :param value1: The value of the first filter to looking for data.
@@ -374,7 +360,7 @@ def validate_transaction(table_name,
     return row_data
 
 
-class UrbvanModelDb(Base):
+class StoreModelDb(Base):
 
     r"""
     Class to instance the data of a Van on the database.
@@ -385,7 +371,7 @@ class UrbvanModelDb(Base):
 
     cfg = get_config_constant_file()
 
-    __tablename__ = cfg['DB_OBJECTS']['VAN_TABLE']
+    __tablename__ = cfg['DB_OBJECTS']['STORE_TABLE']
 
     uuid_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['UUID_VAN'], String, primary_key=True)
     plates_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['PLATES_VAN'], String)
@@ -407,41 +393,37 @@ class UrbvanModelDb(Base):
                            self.plates_van,
                            plates_van):
 
-            van_data = update_van_data(self.__tablename__,
-                                       uuid_van,
-                                       plates_van,
-                                       economic_number_van,
-                                       seats_van,
-                                       status_van)
+            van_data = update_store_data(self.__tablename__,
+                                         uuid_van,
+                                         plates_van,
+                                         economic_number_van,
+                                         seats_van,
+                                         status_van)
         else:
-            van_data = insert_new_van(self.__tablename__,
-                                      uuid_van,
-                                      plates_van,
-                                      economic_number_van,
-                                      seats_van,
-                                      status_van)
+            van_data = insert_new_store(self.__tablename__,
+                                        uuid_van,
+                                        plates_van,
+                                        economic_number_van,
+                                        seats_van,
+                                        status_van)
 
         return van_data
 
 
 # Add Van data to insert the row on the database
-def insert_new_van(table_name, uuid_van, plates_van, economic_number_van, seats_van, status_van):
+def insert_new_store(table_name, store_obj: StoreModel):
     r"""
     Transaction to add data of a Van and inserted on database.
     The data that you can insert are:
 
     :param table_name: The table name to looking for data van.
-    :param uuid_van: UUID to identify the Van registered.
-    :param plates_van: Plates of a Van.
-    :param economic_number_van: Economic number of a Van.
-    :param seats_van: Number of seats of the Van.
-    :param status_van: Status of the Van
-    :return van_data_inserted: Dictionary that contains Van data inserted on db.
+    :param store_obj: Store object model to add new store data.
+    :return store_data_inserted: Dictionary that contains Store data inserted on db.
     """
 
     conn = None
     cursor = None
-    van_data_inserted = dict()
+    store_data_inserted = dict()
 
     try:
         conn = session_to_db()
@@ -449,54 +431,79 @@ def insert_new_van(table_name, uuid_van, plates_van, economic_number_van, seats_
         cursor = conn.cursor()
 
         created_at = get_datenow_from_db()
+        last_update_date = get_datenow_from_db()
 
-        data_insert = (uuid_van, plates_van, economic_number_van, seats_van, created_at, status_van,)
+        store_id = store_obj.get_id_store()
+        store_code = store_obj.get_store_code()
+        store_name = store_obj.get_store_name()
+        store_external_number = store_obj.get_external_number()
+        store_street_address = store_obj.get_street_address()
+        store_suburb_address = store_obj.get_suburb_address()
+        store_city_address = store_obj.get_city_address()
+        store_country_address = store_obj.get_country_address()
+        store_zippostal_code = store_obj.get_zip_postal_address()
+        store_min_inventory = store_obj.get_minimum_stock()
 
-        sql_van_insert = 'INSERT INTO {} ' \
-                         '(uuid_van, ' \
-                         'plates_van, ' \
-                         'economic_number_van, ' \
-                         'seats_van, ' \
-                         'created_at, ' \
-                         'status_van, ' \
-                         'last_update_date) ' \
-                         'VALUES (%s, %s, %s, %s, NOW())'.format(table_name)
+        data_insert = (store_id, store_code, store_name, store_external_number, store_street_address,
+                       store_suburb_address, store_city_address, store_country_address, store_zippostal_code,
+                       store_min_inventory,)
 
-        cursor.execute(sql_van_insert, data_insert)
+        sql_store_insert = 'INSERT INTO cargamos.store_api ' \
+                           '(id_store, ' \
+                           'store_name, ' \
+                           'store_code, ' \
+                           'store_street_address, ' \
+                           'store_external_number, ' \
+                           'store_suburb_address, ' \
+                           'store_city_address, ' \
+                           'store_country_address, ' \
+                           'store_zippostal_code, ' \
+                           'store_min_inventory, ' \
+                           'creation_date, ' \
+                           'last_update_date) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'.format(table_name)
+
+        cursor.execute(sql_store_insert, data_insert)
 
         conn.commit()
 
-        logger.info('Van Vehicle inserted %s', "{0}, Plate: {1}".format(uuid_van, plates_van))
+        logger.info('Store inserted %s', "{0}, Code: {1}, Name: {2}".format(store_id, store_code, store_name))
 
         close_cursor(cursor)
 
         row_exists = validate_transaction(table_name,
-                                          'uuid_van',
-                                          'uuid_van', uuid_van,
-                                          'plates_van', plates_van,
-                                          'economic_number_van', economic_number_van)
+                                          'id_store',
+                                          'id_store', store_id,
+                                          'store_code', store_code,
+                                          'store_name', store_name)
 
-        if str(uuid_van) not in str(row_exists):
+        address_store = format_store_address(store_street_address,
+                                             store_external_number,
+                                             store_suburb_address,
+                                             store_zippostal_code,
+                                             store_city_address,
+                                             store_country_address)
 
-            van_data_inserted = {
-                "UUID": uuid_van,
-                "Plate": plates_van,
-                "EconomicNumber": economic_number_van,
-                "SeatsNumber": seats_van,
-                "Status": status_van,
+        if str(store_id) not in str(row_exists):
+
+            store_data_inserted = {
+                "IdStore": store_id,
+                "CodeStore": store_code,
+                "NameStore": store_name,
+                "AddressStore": address_store,
+                "MinimumStock": store_min_inventory,
                 "CreationDate": created_at,
-                "Message": "Van Inserted Successful",
+                "Message": "Store Inserted Successful",
             }
 
         else:
-            van_data_inserted = {
-                "UUID": uuid_van,
-                "Plate": plates_van,
-                "EconomicNumber": economic_number_van,
-                "SeatsNumber": seats_van,
-                "Status": status_van,
+            store_data_inserted = {
+                "IdStore": store_id,
+                "CodeStore": store_code,
+                "NameStore": store_name,
+                "AddressStore": address_store,
+                "MinimumStock": store_min_inventory,
                 "CreationDate": created_at,
-                "Message": "Van already Inserted",
+                "Message": "Store already Inserted",
             }
 
     except SQLAlchemyError as error:
@@ -508,27 +515,23 @@ def insert_new_van(table_name, uuid_van, plates_van, economic_number_van, seats_
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(van_data_inserted)
+    return json.dumps(store_data_inserted)
 
 
 # Update van data registered
-def update_van_data(table_name, uuid_van, plates_van, economic_number_van, seats_van, status_van):
+def update_store_data(table_name, data_store):
     r"""
     Transaction to update data of a Van registered on database.
     The data that you can update are:
 
-    :param table_name: The table name to looking for data van.
-    :param uuid_van: Can not update an UUID of a van, but use it to looking for and update it.
-    :param plates_van: Plates of a van to update.
-    :param economic_number_van: Economic number of a van to update.
-    :param seats_van: Number of seats of a van to update.
-    :param status_van: Status of a van to update.
-    :return van_data_updated: Dictionary that contains Van data updated on db.
+    :param table_name: The table name to looking for data.
+    :param data_store: Dictionary of all data store to update.
+    :return store_data_updated: Dictionary that contains Store data updated on db.
     """
 
     conn = None
     cursor = None
-    van_data_updated = dict()
+    store_data_updated = dict()
 
     try:
         conn = session_to_db()
@@ -537,44 +540,78 @@ def update_van_data(table_name, uuid_van, plates_van, economic_number_van, seats
 
         last_update_date = get_datenow_from_db()
 
-        # update row to database
-        sql_update_van = "UPDATE {} SET economic_number_van=%s, seats_van=%s, status_van=%s, last_update_date = NOW()" \
-                         " WHERE uuid_van=%s AND plates_van=%s".format(table_name)
+        store_id = data_store.get("store_id")
+        store_code = data_store.get("store_code")
+        store_name = data_store.get("store_name")
+        street_address = data_store("street_address")
+        external_number_address = data_store("external_number_address")
+        suburb_address = data_store.get("suburb_address")
+        city_address = data_store.get("city_address")
+        country_address = data_store.get("country_address")
+        zip_postal_code_address = data_store.get("zip_postal_code_address")
+        minimum_stock = data_store.get("minimum_inventory")
 
-        cursor.execute(sql_update_van, (economic_number_van, seats_van, status_van, uuid_van, plates_van,))
+        # update row to database
+        sql_update_store = 'UPDATE {} ' \
+                           'SET store_name=%s, ' \
+                           'store_street_address=%s, ' \
+                           'store_external_number=%s, ' \
+                           'store_suburb_address=%s, ' \
+                           'store_city_address=%s, ' \
+                           'store_country_address=%s, ' \
+                           'store_zippostal_code=%s, ' \
+                           'store_min_inventory=%s, ' \
+                           'last_update_date=%s ' \
+                           'WHERE id_store=%s AND store_code=%s'.format(table_name)
+
+        cursor.execute(sql_update_store, (store_name,
+                                          street_address,
+                                          external_number_address,
+                                          suburb_address,
+                                          city_address,
+                                          country_address,
+                                          zip_postal_code_address,
+                                          minimum_stock,))
+
+        address_store = format_store_address(street_address,
+                                             external_number_address,
+                                             suburb_address,
+                                             zip_postal_code_address,
+                                             city_address,
+                                             country_address)
 
         conn.commit()
 
         close_cursor(cursor)
 
         row_exists = validate_transaction(table_name,
-                                          'status_van',
-                                          'uuid_van', uuid_van,
-                                          'plates_van', plates_van,
-                                          'economic_number_van', economic_number_van)
+                                          'id_store',
+                                          'id_store', store_id,
+                                          'store_code', store_code,
+                                          'store_name', store_name)
 
-        if str(status_van) in str(row_exists):
+        if str(store_id) in str(row_exists):
 
-            van_data_updated = {
-                "UUID": uuid_van,
-                "Plate": plates_van,
-                "EconomicNumber": economic_number_van,
-                "SeatsNumber": seats_van,
-                "Status": status_van,
+            store_data_updated = {
+                "IdStore": store_id,
+                "CodeStore": store_code,
+                "NameStore": store_name,
+                "AddressStore": address_store,
+                "MinimumStock": minimum_stock,
                 "LastUpdateDate": last_update_date,
-                "Message": "Van Updated Successful",
+                "Message": "Store Updated Successful",
             }
 
         else:
 
-            van_data_updated = {
-                "UUID": uuid_van,
-                "Plate": plates_van,
-                "EconomicNumber": economic_number_van,
-                "SeatsNumber": seats_van,
-                "Status": status_van,
+            store_data_updated = {
+                "IdStore": store_id,
+                "CodeStore": store_code,
+                "NameStore": store_name,
+                "AddressStore": address_store,
+                "MinimumStock": minimum_stock,
                 "LastUpdateDate": last_update_date,
-                "Message": "Van not updated",
+                "Message": "Store not updated",
             }
 
             logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(status_van,
@@ -592,23 +629,23 @@ def update_van_data(table_name, uuid_van, plates_van, economic_number_van, seats
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(van_data_updated)
+    return json.dumps(store_data_updated)
 
 
-# Delete van registered by uuid and plates
-def delete_van_data(table_name, uuid_van, plate_van):
+# Delete store registered by id and code
+def delete_store_data(table_name, store_id, store_code):
     r"""
     Transaction to delete a Van data registered on database from his uuid and plates.
 
     :param table_name: The table name to looking for data van.
-    :param uuid_van: Id to looking for a Van data to delete.
-    :param plate_van: Plates to looking for a Van data to delete.
+    :param store_id: Id to looking for a Store data to delete.
+    :param store_code: Code to looking for a Store data to delete.
     :return van_data_delete: Dictionary contains Van data deleted.
     """
 
     conn = None
     cursor = None
-    van_data_deleted = dict()
+    store_data_deleted = dict()
 
     try:
         conn = session_to_db()
@@ -616,40 +653,40 @@ def delete_van_data(table_name, uuid_van, plate_van):
         cursor = conn.cursor()
 
         # delete row to database
-        sql_delete_van = "DELETE FROM {} WHERE uuid_van=%s AND plates_van=%s".format(table_name)
+        sql_delete_van = "DELETE FROM {} WHERE id_store=%s AND store_code=%s".format(table_name)
 
-        cursor.execute(sql_delete_van, (uuid_van, plate_van,))
+        cursor.execute(sql_delete_van, (store_id, store_code,))
 
         conn.commit()
 
         close_cursor(cursor)
 
-        van_data_deleted = {
-            "UUID": uuid_van,
-            "Plate": plate_van,
-            "Message": "Van Deleted Successful",
+        store_data_deleted = {
+            "IdStore": store_id,
+            "CodeStore": store_code,
+            "Message": "Store Deleted Successful",
         }
 
         row_exists = exists_data_row(table_name,
-                                     'uuid_van',
-                                     'uuid_van', uuid_van,
-                                     'plates_van', plate_van)
+                                     'id_store',
+                                     'id_store', store_id,
+                                     'store_code', store_code)
 
-        if str(uuid_van) in str(row_exists):
+        if str(store_id) in str(row_exists):
 
-            van_data_deleted = {
-                "UUID": uuid_van,
-                "Plate": plate_van,
-                "Message": "Van not deleted",
+            store_data_deleted = {
+                "IdStore": store_id,
+                "CodeStore": store_code,
+                "Message": "Store not deleted",
             }
 
         else:
 
-            logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(uuid_van,
+            logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(store_id,
                                                                                                      table_name))
             raise mvc_exc.ItemNotStored(
                 'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    uuid_van, table_name
+                    store_id, table_name
                 )
             )
 
@@ -662,7 +699,20 @@ def delete_van_data(table_name, uuid_van, plate_van):
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(van_data_deleted)
+    return json.dumps(store_data_deleted)
+
+
+# Format Store Address
+def format_store_address(street_address, external_number_address, suburb_address, zip_postal_code_address, city_address,
+                         country_address):
+    address_store = "{} no. {}, col. {}, Cp. {}, {}, {}".format(street_address,
+                                                                external_number_address,
+                                                                suburb_address,
+                                                                zip_postal_code_address,
+                                                                city_address,
+                                                                country_address)
+
+    return address_store
 
 
 # Select all data van by uuid from db

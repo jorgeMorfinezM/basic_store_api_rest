@@ -195,17 +195,89 @@ class ProductModel:
         cls.product_long_description = product_long_desc
 
     @classmethod
-    def get_product_sku(cls):
-        return cls.product_sku
+    def get_product_photo(cls):
+        return cls.product_photo
 
     @classmethod
-    def set_product_sku(cls, product_sku):
-        cls.product_sku = product_sku
+    def set_product_photo(cls, product_photo):
+        cls.product_photo = product_photo
 
     @classmethod
-    def get_product_sku(cls):
-        return cls.product_sku
+    def get_product_price(cls):
+        return cls.product_price
 
     @classmethod
-    def set_product_sku(cls, product_sku):
-        cls.product_sku = product_sku
+    def set_product_price(cls, product_price):
+        cls.product_price = product_price
+
+    @classmethod
+    def get_product_tax(cls):
+        return cls.product_tax
+
+    @classmethod
+    def set_product_tax(cls, product_tax):
+        cls.product_tax = product_tax
+
+    @classmethod
+    def get_product_currency(cls):
+        return cls.product_currency
+
+    @classmethod
+    def set_product_currency(cls, product_currency):
+        cls.product_currency = product_currency
+
+    @classmethod
+    def get_product_status(cls):
+        return cls.product_status
+
+    @classmethod
+    def set_product_status(cls, product_status):
+        cls.product_status = product_status
+
+    @classmethod
+    def get_product_published(cls):
+        return cls.product_published
+
+    @classmethod
+    def set_product_published(cls, product_published):
+        cls.product_published = product_published
+
+    @classmethod
+    def get_product_manage_stock(cls):
+        return cls.product_manage_stock
+
+    @classmethod
+    def set_product_manage_stock(cls, product_manage_stock):
+        cls.product_manage_stock = product_manage_stock
+
+    @classmethod
+    def get_product_length(cls):
+        return cls.product_length
+
+    @classmethod
+    def set_product_length(cls, product_length):
+        cls.product_length = product_length
+
+    @classmethod
+    def get_product_width(cls):
+        return cls.product_width
+
+    @classmethod
+    def set_product_width(cls, product_width):
+        cls.product_width = product_width
+
+    @classmethod
+    def get_product_height(cls):
+        return cls.product_height
+
+    @classmethod
+    def set_product_height(cls, product_height):
+        cls.product_height = product_height
+
+    @classmethod
+    def get_product_weight(cls):
+        return cls.product_height
+
+    @classmethod
+    def set_product_weight(cls, product_weight):
+        cls.product_weight = product_weight

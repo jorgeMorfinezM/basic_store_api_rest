@@ -7,14 +7,16 @@ DB_RDS:
   PASSWORD_DB: 'postgres'
   HOST_DB: 'ec2-3-88-184-169.compute-1.amazonaws.com'
   PORT_DB: '5432'
-  DATABASE_NAME: 'urbvan_test'
+  DATABASE_NAME: 'tech_test_db'
 
 # DATABASE TABLES NAME
 DB_OBJECTS:
-  VAN_TABLE: 'urbvan.van_vehicle'
+  STORE_TABLE: 'cargamos.store_api'
+  PRODUCT_TABLE: 'cargamos.product_api'
+
 
 DB_AUTH_OBJECT:
-  USERS_AUTH: 'urbvan.user_auth_api'
+  USERS_AUTH: 'cargamos.user_auth_api'
 
 DB_AUTH_COLUMNS_DATA:
   USER_AUTH:
@@ -25,15 +27,45 @@ DB_AUTH_COLUMNS_DATA:
     LAST_UPDATE_DATE: last_update_date
 
 DB_COLUMNS_DATA:
-  VAN_VEHICLE:
-    UUID_VAN: uuid_van
-    PLATES_VAN: plates_van
-    ECONOMIC_NUMBER: economic_number_van
-    SEATS_VAN: seats_van
-    CREATED_AT: created_at
-    STATUS_VAN: status_van
+  STORE_API:
+    ID_STORE: id_store
+    STORE_NAME: store_name
+    STORE_CODE: store_code
+    STORE_STREET_ADDRESS: store_street_address
+    STORE_NUMBER_EXT_ADDRESS: store_external_number
+    STORE_SUBURB_ADDRESS: store_suburb_address
+    STORE_CITY_ADDRESS: store_city_address
+    STORE_COUNTRY_ADDRESS: store_country_address
+    STORE_POSTAL_CODE: store_zippostal_code
+    STORE_MIN_STOCK: store_min_inventory
+    CREATION_DATE: creation_date
+    LAST_UPDATE_DATE: last_update_date
+  PRODUCT_API:
+    ID: product_id
+	SKU: product_sku
+	UNSPC: product_unspc
+	BRAND: product_brand
+	CATEGORY_ID: category_id
+	PARENT_CAT_ID: parent_category_id
+	UOM: unit_of_measure
+	STOCK: product_stock
+	STORE_ID: product_store_id
+	NAME: product_name
+	TITLE: product_title
+	LONG_DESCRIPTION: product_long_description
+	PHOTO: product_photo
+	PRICE: product_price
+	TAX_PRICE: product_tax
+	CURRENCY: product_currency
+	STATUS: product_status
+	PUBLISHED: product_published
+	MANAGE_STOCK: product_manage_stock
+	LENHTH: product_length
+	WIDTH: product_width
+	HEIGHT: product_height
+	WEIGHT: product_weight
 
-VAN_STATUS_CHECK_LIST: ['Activo', 'En reparacion', 'Baja']
+PRODUCT_STATUS_CHECK_LIST: ['Activo', 'Inactivo']
 
 LOG_RESOURCE:
   FILE_EXTENSION: '.log'
