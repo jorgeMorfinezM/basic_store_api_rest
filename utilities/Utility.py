@@ -10,6 +10,7 @@ __history__ = """ """
 __version__ = "1.1.A19.1 ($Rev: 1 $)"
 
 import re
+import json
 from constants.constants import Constants as Const
 
 
@@ -40,6 +41,24 @@ class Utility:
                                                                     country_address)
 
         return address_store
+
+    @staticmethod
+    def set_data_input_store_dict(id_store, code_store, name_store, street_store, ext_num_store, suburb_store,
+                                  city_store, country_store, postal_code_store, minimum_stock):
+        store_dict = {
+            "store_id": id_store,
+            "store_code": code_store,
+            "store_name": name_store,
+            "street_address": street_store,
+            "external_number_address": ext_num_store,
+            "suburb_address": suburb_store,
+            "city_address": city_store,
+            "country_address": country_store,
+            "zip_postal_code_address": postal_code_store,
+            "minimum_inventory": minimum_stock,
+        }
+
+        return json.dumps(store_dict)
 
     # Define y obtiene el configurador para las constantes del sistema:
     @staticmethod

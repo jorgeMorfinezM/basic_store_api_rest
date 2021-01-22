@@ -373,41 +373,40 @@ class StoreModelDb(Base):
 
     __tablename__ = cfg['DB_OBJECTS']['STORE_TABLE']
 
-    uuid_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['UUID_VAN'], String, primary_key=True)
-    plates_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['PLATES_VAN'], String)
-    economic_number_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['ECONOMIC_NUMBER'], String)
-    seats_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['SEATS_VAN'], Numeric)
-    created_at = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['CREATED_AT'], String)
-    status_van = Column(cfg['DB_COLUMNS_DATA']['VAN_VEHICLE']['STATUS_VAN'], String)
+    id_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['ID_STORE'], Numeric, primary_key=True)
+    name_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_NAME'], String)
+    code_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_CODE'], String)
+    street_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_STREET_ADDRESS'], String)
+    external_number_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_NUMBER_EXT_ADDRESS'], String)
+    suburb_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_SUBURB_ADDRESS'], String)
+    city_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_CITY_ADDRESS'], String)
+    country_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_COUNTRY_ADDRESS'], String)
+    postal_code_store = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_POSTAL_CODE'], String)
+    minimum_stock = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['STORE_MIN_STOCK'], Numeric)
+    creation_date = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['CREATION_DATE'], String)
+    last_update_date = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['LAST_UPDATE_DATE'], String)
 
-    def manage_van_vehicle_data(self, uuid_van, plates_van, economic_number_van, seats_van, status_van):
+    def manage_van_vehicle_data(self, id_store, name_store, code_store, street_store, ext_num_store, suburb_store,
+                                city_store, country_store, postal_code_store, minimum_stock, store_obj):
 
-        van_data = {}
+        store_data = {}
 
-        # session = self
+        store_dict = Util.set_data_input_store_dict(id_store, code_store, name_store, street_store, ext_num_store,
+                                                    suburb_store, city_store, country_store, postal_code_store,
+                                                    minimum_stock)
 
         if exists_data_row(self.__tablename__,
-                           self.uuid_van,
-                           self.uuid_van,
-                           uuid_van,
-                           self.plates_van,
-                           plates_van):
+                           self.id_store,
+                           self.id_store,
+                           id_store,
+                           self.code_store,
+                           code_store):
 
-            van_data = update_store_data(self.__tablename__,
-                                         uuid_van,
-                                         plates_van,
-                                         economic_number_van,
-                                         seats_van,
-                                         status_van)
+            store_data = update_store_data(self.__tablename__, store_dict)
         else:
-            van_data = insert_new_store(self.__tablename__,
-                                        uuid_van,
-                                        plates_van,
-                                        economic_number_van,
-                                        seats_van,
-                                        status_van)
+            store_data = insert_new_store(self.__tablename__, store_obj)
 
-        return van_data
+        return store_data
 
 
 # Add Store data to insert the row on the database
@@ -900,9 +899,9 @@ def select_stock_in_product(store_code, product_sku):
 
         if result is None:
             logger.error('Can not read the recordset: {}, '
-                         'because is not stored on table: {}'.format(store_code, table_name))
+                         'because is not stored on table: {}'.format(store_code, store_table))
             raise SQLAlchemyError(
-                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(store_table)
             )
 
         for stock_data in result:
@@ -980,21 +979,17 @@ def select_all_stock_in_product(product_sku):
                            "   prod.product_stock " \
                            " FROM {} store, {} prod " \
                            " WHERE store.id_store = prod.product_store_id " \
-                           " AND store.store_code = %s " \
                            " AND prod.product_sku = %s".format(store_table, product_table)
 
-        cursor.execute(sql_stock_by_sku, (store_code, product_sku,))
+        cursor.execute(sql_stock_by_sku, (product_sku,))
 
         result = cursor.fetchall()
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid'.format(store_code))
-
         if result is None:
             logger.error('Can not read the recordset: {}, '
-                         'because is not stored on table: {}'.format(store_code, table_name))
+                         'because is not stored on table: {}'.format(product_sku, product_table))
             raise SQLAlchemyError(
-                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(product_table)
             )
 
         for stock_data in result:
@@ -1013,10 +1008,10 @@ def select_all_stock_in_product(product_sku):
                                                                  stock_product))
 
             stock_data_by_sku += [{
+                "SKU": sku_product,
                 "ProductStock": {
                     "CodeStore": code_store,
                     "NameStore": name_store,
-                    "SKU": sku_product,
                     "Stock": stock_product,
                 }
             }]
