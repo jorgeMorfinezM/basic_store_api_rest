@@ -17,7 +17,7 @@ import uuid
 class ProductModel:
 
     r"""
-    product_id: UUID único para identificar un producto.
+    product_id: ID único para identificar un producto.
     product_sku: Nombre de la tienda.
     product_unspc: Codigo unico de la tienda (puede ser alfanumerico).
     product_brand: Numero exterior del domicilio de la tienda.
@@ -46,7 +46,7 @@ class ProductModel:
 
     cfg = None
 
-    product_id = str()
+    product_id = int()
     product_sku = str()
     product_unspc = str()
     product_brand = str()
@@ -74,7 +74,7 @@ class ProductModel:
 
     def __init__(self, sku, product_unspc, brand, category_id, parent_cat_id, uom, stock, store_id, name, title, long_desc,
                  photo, price, tax, currency, status, published, manage_stock, length, width, height, weight):
-        self.product_id = uuid.uuid4()
+        self.product_id = uuid.uuid4().int
         self.product_sku = sku
         self.product_unspc = product_unspc
         self.product_brand = brand

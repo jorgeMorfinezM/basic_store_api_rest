@@ -39,11 +39,11 @@ from sqlalchemy import Column, String, Numeric
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
 
-from constants.constants import Constants as Const
 from db_controller import mvc_exceptions as mvc_exc
 from logger_controller.logger_control import *
 from model.StoreModel import StoreModel
 from model.ProductModel import ProductModel
+from utilities.Utility import Utility as Util
 
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
@@ -410,7 +410,7 @@ class StoreModelDb(Base):
         return van_data
 
 
-# Add Van data to insert the row on the database
+# Add Store data to insert the row on the database
 def insert_new_store(table_name, store_obj: StoreModel):
     r"""
     Transaction to add data of a Van and inserted on database.
@@ -444,11 +444,21 @@ def insert_new_store(table_name, store_obj: StoreModel):
         store_zippostal_code = store_obj.get_zip_postal_address()
         store_min_inventory = store_obj.get_minimum_stock()
 
+        if not Util.validate_store_code_syntax(store_code):
+
+            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
+                                                                                                          table_name))
+            raise mvc_exc.ItemNotStored(
+                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
+                    store_id, table_name
+                )
+            )
+
         data_insert = (store_id, store_code, store_name, store_external_number, store_street_address,
                        store_suburb_address, store_city_address, store_country_address, store_zippostal_code,
                        store_min_inventory,)
 
-        sql_store_insert = 'INSERT INTO cargamos.store_api ' \
+        sql_store_insert = 'INSERT INTO {} ' \
                            '(id_store, ' \
                            'store_name, ' \
                            'store_code, ' \
@@ -476,26 +486,25 @@ def insert_new_store(table_name, store_obj: StoreModel):
                                           'store_code', store_code,
                                           'store_name', store_name)
 
-        address_store = format_store_address(store_street_address,
-                                             store_external_number,
-                                             store_suburb_address,
-                                             store_zippostal_code,
-                                             store_city_address,
-                                             store_country_address)
+        address_store = Util.format_store_address(store_street_address,
+                                                  store_external_number,
+                                                  store_suburb_address,
+                                                  store_zippostal_code,
+                                                  store_city_address,
+                                                  store_country_address)
 
-        if str(store_id) not in str(row_exists):
+        store_data_inserted = {
+            "IdStore": store_id,
+            "CodeStore": store_code,
+            "NameStore": store_name,
+            "AddressStore": address_store,
+            "MinimumStock": store_min_inventory,
+            "CreationDate": created_at,
+            "Message": "Store Inserted Successful",
+        }
 
-            store_data_inserted = {
-                "IdStore": store_id,
-                "CodeStore": store_code,
-                "NameStore": store_name,
-                "AddressStore": address_store,
-                "MinimumStock": store_min_inventory,
-                "CreationDate": created_at,
-                "Message": "Store Inserted Successful",
-            }
+        if not str(store_id) not in str(row_exists):
 
-        else:
             store_data_inserted = {
                 "IdStore": store_id,
                 "CodeStore": store_code,
@@ -518,7 +527,7 @@ def insert_new_store(table_name, store_obj: StoreModel):
     return json.dumps(store_data_inserted)
 
 
-# Update van data registered
+# Update Store data registered
 def update_store_data(table_name, data_store):
     r"""
     Transaction to update data of a Van registered on database.
@@ -551,6 +560,16 @@ def update_store_data(table_name, data_store):
         zip_postal_code_address = data_store.get("zip_postal_code_address")
         minimum_stock = data_store.get("minimum_inventory")
 
+        if not Util.validate_store_code_syntax(store_code):
+
+            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
+                                                                                                          table_name))
+            raise mvc_exc.ItemNotStored(
+                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
+                    store_id, table_name
+                )
+            )
+
         # update row to database
         sql_update_store = 'UPDATE {} ' \
                            'SET store_name=%s, ' \
@@ -573,12 +592,12 @@ def update_store_data(table_name, data_store):
                                           zip_postal_code_address,
                                           minimum_stock,))
 
-        address_store = format_store_address(street_address,
-                                             external_number_address,
-                                             suburb_address,
-                                             zip_postal_code_address,
-                                             city_address,
-                                             country_address)
+        address_store = Util.format_store_address(street_address,
+                                                  external_number_address,
+                                                  suburb_address,
+                                                  zip_postal_code_address,
+                                                  city_address,
+                                                  country_address)
 
         conn.commit()
 
@@ -590,20 +609,17 @@ def update_store_data(table_name, data_store):
                                           'store_code', store_code,
                                           'store_name', store_name)
 
-        if str(store_id) in str(row_exists):
+        store_data_updated = {
+            "IdStore": store_id,
+            "CodeStore": store_code,
+            "NameStore": store_name,
+            "AddressStore": address_store,
+            "MinimumStock": minimum_stock,
+            "LastUpdateDate": last_update_date,
+            "Message": "Store Updated Successful",
+        }
 
-            store_data_updated = {
-                "IdStore": store_id,
-                "CodeStore": store_code,
-                "NameStore": store_name,
-                "AddressStore": address_store,
-                "MinimumStock": minimum_stock,
-                "LastUpdateDate": last_update_date,
-                "Message": "Store Updated Successful",
-            }
-
-        else:
-
+        if not str(store_id) in str(row_exists):
             store_data_updated = {
                 "IdStore": store_id,
                 "CodeStore": store_code,
@@ -614,7 +630,7 @@ def update_store_data(table_name, data_store):
                 "Message": "Store not updated",
             }
 
-            logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(status_van,
+            logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(store_id,
                                                                                                       table_name))
             raise SQLAlchemyError(
                 "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
@@ -652,6 +668,16 @@ def delete_store_data(table_name, store_id, store_code):
 
         cursor = conn.cursor()
 
+        if not Util.validate_store_code_syntax(store_code):
+
+            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
+                                                                                                          table_name))
+            raise mvc_exc.ItemNotStored(
+                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
+                    store_id, table_name
+                )
+            )
+
         # delete row to database
         sql_delete_van = "DELETE FROM {} WHERE id_store=%s AND store_code=%s".format(table_name)
 
@@ -672,15 +698,13 @@ def delete_store_data(table_name, store_id, store_code):
                                      'id_store', store_id,
                                      'store_code', store_code)
 
-        if str(store_id) in str(row_exists):
+        if not str(store_id) in str(row_exists):
 
             store_data_deleted = {
                 "IdStore": store_id,
                 "CodeStore": store_code,
                 "Message": "Store not deleted",
             }
-
-        else:
 
             logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(store_id,
                                                                                                      table_name))
@@ -702,34 +726,21 @@ def delete_store_data(table_name, store_id, store_code):
     return json.dumps(store_data_deleted)
 
 
-# Format Store Address
-def format_store_address(street_address, external_number_address, suburb_address, zip_postal_code_address, city_address,
-                         country_address):
-    address_store = "{} no. {}, col. {}, Cp. {}, {}, {}".format(street_address,
-                                                                external_number_address,
-                                                                suburb_address,
-                                                                zip_postal_code_address,
-                                                                city_address,
-                                                                country_address)
-
-    return address_store
-
-
-# Select all data van by uuid from db
-def select_van_by_uuid(table_name, uuid_van):
+# Select all data store by store code from db
+def select_by_store_code(table_name, store_code):
     r"""
     Get all the Van's data looking for specific status on database.
 
+    :param store_code:
     :param table_name: The table name to looking for data van.
-    :param uuid_van: Id to looking for a Van data.
-    :return data_van_by_uuid: Dictionary that contains all the Van's data by specific UUID.
+    :return data_store_by_code: Dictionary that contains all the Store's data by specific code.
     """
 
     conn = None
     cursor = None
 
-    van_data_by_id = []
-    data_van_all = dict()
+    store_data_by_code = []
+    data_store_all = dict()
 
     try:
 
@@ -737,73 +748,99 @@ def select_van_by_uuid(table_name, uuid_van):
 
         cursor = conn.cursor()
 
-        sql_van_by_id = " SELECT uuid_van, " \
-                        "        plates_van, " \
-                        "        economic_number_van, " \
-                        "        seats_van, " \
-                        "        created_at, " \
-                        "        status_van, " \
-                        "        last_update_date " \
-                        " FROM {} " \
-                        " WHERE uuid_van = %s".format(table_name)
+        if not Util.validate_store_code_syntax(store_code):
 
-        cursor.execute(sql_van_by_id, (uuid_van,))
-
-        result = cursor.fetchall()
-
-        if result is not None:
-            for van_data in result:
-                if van_data is not None:
-
-                    uuid_van = van_data['uuid_van']
-                    plates_van = van_data['plates_van']
-                    economic_number = van_data['economic_number_van']
-                    seats_van = van_data['seats_van']
-                    fecha_creacion = datetime.strptime(str(van_data['created_at']), "%Y-%m-%d %H:%M:%S")
-                    status_van = van_data['status_van']
-                    fecha_actualizacion = datetime.strptime(str(van_data['last_update_date']), "%Y-%m-%d %H:%M:%S")
-
-                    logger.info('Van Registered: %s', 'VanUUId: {}, '
-                                                      'VanPlates: {}, '
-                                                      'VanEconomicNumber: {}, '
-                                                      'VanSeats: {}, '
-                                                      'VanStatus: {}, '
-                                                      'VanCreatedAt: {} '.format(uuid_van,
-                                                                                 plates_van,
-                                                                                 economic_number,
-                                                                                 seats_van,
-                                                                                 status_van,
-                                                                                 fecha_creacion))
-
-                    van_data_by_id += [{
-                        "VanVehicle": {
-                            "UUID": uuid_van,
-                            "Plate": plates_van,
-                            "EconomicNumber": economic_number,
-                            "SeatsNumber": seats_van,
-                            "Status": status_van,
-                            "CreationDate": fecha_creacion,
-                            "LastUpdateDate": fecha_actualizacion,
-                        }
-                    }]
-
-                else:
-                    logger.error('Can not read the recordset: {}, '
-                                 'beacause is not stored on table: {}'.format(uuid_van, table_name))
-                    raise SQLAlchemyError(
-                        "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
-                    )
-        else:
-            logger.error('Can not read the recordset, because is not stored: %s', uuid_van)
+            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
+                                                                                                          table_name))
             raise mvc_exc.ItemNotStored(
                 'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    uuid_van, table_name
+                    store_code, table_name
                 )
             )
 
+        sql_store_by_code = " SELECT id_store, " \
+                            "        store_name, " \
+                            "        store_code, " \
+                            "        store_street_address, " \
+                            "        store_external_number, " \
+                            "        store_suburb_address, " \
+                            "        store_city_address, " \
+                            "        store_country_address, " \
+                            "        store_zippostal_code, " \
+                            "        store_min_inventory, " \
+                            "        creation_date, " \
+                            "        last_update_date" \
+                            " FROM {}" \
+                            " WHERE store_code = %s".format(table_name)
+
+        cursor.execute(sql_store_by_code, (store_code,))
+
+        result = cursor.fetchall()
+
+        if result is None:
+            logger.error('Can not read the recordset, because is not stored: %s', store_code)
+            raise mvc_exc.ItemNotStored(
+                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
+                    store_code, table_name
+                )
+            )
+
+        for store_data in result:
+            if store_data is None:
+
+                logger.error('Can not read the recordset: {}, '
+                             'because is not stored on table: {}'.format(store_code, table_name))
+                raise SQLAlchemyError(
+                    "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
+                )
+
+            id_store = store_data['id_store']
+            name_store = store_data['store_name']
+            code_store = store_data['store_code']
+            street_address = store_data['store_street_address']
+            external_number_address = store_data['store_external_number']
+            suburb_address = store_data['store_suburb_address']
+            city_address = store_data['store_city_address']
+            country_address = store_data['store_country_address']
+            zip_postal_code_address = store_data['store_zippostal_code']
+            minimum_stock = store_data['store_min_inventory']
+            fecha_creacion = datetime.strptime(str(store_data['creation_date']), "%Y-%m-%d %H:%M:%S")
+            fecha_actualizacion = datetime.strptime(str(store_data['last_update_date']), "%Y-%m-%d %H:%M:%S")
+
+            address_store = Util.format_store_address(street_address,
+                                                      external_number_address,
+                                                      suburb_address,
+                                                      zip_postal_code_address,
+                                                      city_address,
+                                                      country_address)
+
+            logger.info('Van Registered: %s', 'IdStore: {}, '
+                                              'CodeStore: {}, '
+                                              'NameStore: {}, '
+                                              'AddressStore: {}, '
+                                              'MinimumStock: {}, '
+                                              'CreationDate: {} '.format(id_store,
+                                                                         code_store,
+                                                                         name_store,
+                                                                         address_store,
+                                                                         minimum_stock,
+                                                                         fecha_creacion))
+
+            store_data_by_code += [{
+                "Store": {
+                    "IdStore": id_store,
+                    "CodeStore": code_store,
+                    "NameStore": name_store,
+                    "AddressStore": address_store,
+                    "MinimumStock": minimum_stock,
+                    "CreationDate": fecha_creacion,
+                    "LastUpdateDate": fecha_actualizacion,
+                }
+            }]
+
         close_cursor(cursor)
 
-        data_van_all = json.dumps(van_data_by_id)
+        data_store_all = json.dumps(store_data_by_code)
 
     except SQLAlchemyError as error:
         conn.rollback()
@@ -814,24 +851,29 @@ def select_van_by_uuid(table_name, uuid_van):
     finally:
         disconnect_from_db(conn)
 
-    return data_van_all
+    return data_store_all
 
 
-# Select all data van by status from db
-def select_van_by_status(table_name, status_van):
+# Select stock in specific product by store code
+def select_stock_in_product(store_code, product_sku):
     r"""
-    Get all the Van's data looking for specific status on database.
+    Get the store stock in a single product looking for by product sku.
 
-    :param table_name: The table name to looking for data van.
-    :param status_van: Status to looking for a Van data.
+    :param product_sku: SKU of product to find stock in a store.
+    :param store_code: The store code to looking for stock by product sku
     :return data_van_by_status: Dictionary that contains all the Van's data by specific status.
     """
 
+    cfg = Util.get_config_constant_file()
+
     conn = None
     cursor = None
 
-    van_data_by_status = []
-    data_van_all = dict()
+    stock_data_by_sku = []
+    data_stock_all = dict()
+
+    store_table = cfg['DB_OBJECTS']['STORE_TABLE']
+    product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
 
     try:
 
@@ -839,84 +881,162 @@ def select_van_by_status(table_name, status_van):
 
         cursor = conn.cursor()
 
-        sql_van_by_id = " SELECT uuid_van, " \
-                        "        plates_van, " \
-                        "        economic_number_van, " \
-                        "        seats_van, " \
-                        "        created_at, " \
-                        "        status_van, " \
-                        "        last_update_date " \
-                        " FROM {} " \
-                        " WHERE status_van = %s".format(table_name)
+        sql_stock_by_sku = " SELECT " \
+                           "   store.store_code, " \
+                           "   store.store_name, " \
+                           "   prod.product_sku, " \
+                           "   prod.product_stock " \
+                           " FROM {} store, {} prod " \
+                           " WHERE store.id_store = prod.product_store_id " \
+                           " AND store.store_code = %s " \
+                           " AND prod.product_sku = %s".format(store_table, product_table)
 
-        cursor.execute(sql_van_by_id, (status_van,))
+        cursor.execute(sql_stock_by_sku, (store_code, product_sku,))
 
         result = cursor.fetchall()
 
-        if result is not None:
-            for van_data in result:
-                if van_data is not None:
+        if not Util.validate_store_code_syntax(store_code):
+            logger.error('Can not read the recordset: {}, because the store code is not valid'.format(store_code))
 
-                    uuid_van = van_data['uuid_van']
-                    plates_van = van_data['plates_van']
-                    economic_number = van_data['economic_number_van']
-                    seats_van = van_data['seats_van']
-                    fecha_creacion = datetime.strptime(str(van_data['created_at']), "%Y-%m-%d %H:%M:%S")
-                    status_van = van_data['status_van']
-                    fecha_actualizacion = datetime.strptime(str(van_data['last_update_date']), "%Y-%m-%d %H:%M:%S")
-
-                    logger.info('Van Registered: %s', 'VanUUId: {}, '
-                                                      'VanPlates: {}, '
-                                                      'VanEconomicNumber: {}, '
-                                                      'VanSeats: {}, '
-                                                      'VanStatus: {}, '
-                                                      'VanCreatedAt: {} '.format(uuid_van,
-                                                                                 plates_van,
-                                                                                 economic_number,
-                                                                                 seats_van,
-                                                                                 status_van,
-                                                                                 fecha_creacion))
-
-                    van_data_by_status += [{
-                        "VanVehicle": {
-                            "UUID": uuid_van,
-                            "Plate": plates_van,
-                            "EconomicNumber": economic_number,
-                            "SeatsNumber": seats_van,
-                            "Status": status_van,
-                            "CreationDate": fecha_creacion,
-                            "LastUpdateDate": fecha_actualizacion,
-                        }
-                    }]
-
-                else:
-                    logger.error('Can not read the recordset: {}, '
-                                 'beacause is not stored on table: {}'.format(status_van, table_name))
-                    raise SQLAlchemyError(
-                        "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
-                    )
-        else:
-            logger.error('Can not read the recordset, because is not stored: %s', status_van)
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    status_van, table_name
-                )
+        if result is None:
+            logger.error('Can not read the recordset: {}, '
+                         'because is not stored on table: {}'.format(store_code, table_name))
+            raise SQLAlchemyError(
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
             )
+
+        for stock_data in result:
+
+            code_store = stock_data['store_code']
+            name_store = stock_data['store_name']
+            sku_product = stock_data['product_sku']
+            stock_product = stock_data['product_stock']
+
+            logger.info('Product Stock: %s', 'CodeStore: {}, '
+                                             'NameStore: {}, '
+                                             'SKU: {}, '
+                                             'Stock: {} '.format(code_store,
+                                                                 name_store,
+                                                                 sku_product,
+                                                                 stock_product))
+
+            stock_data_by_sku += [{
+                "ProductStock": {
+                    "CodeStore": code_store,
+                    "NameStore": name_store,
+                    "SKU": sku_product,
+                    "Stock": stock_product,
+                }
+            }]
 
         close_cursor(cursor)
 
-        data_van_all = json.dumps(van_data_by_status)
+        data_stock_all = json.dumps(stock_data_by_sku)
 
     except SQLAlchemyError as error:
         conn.rollback()
         logger.exception('An exception occurred while execute transaction: %s', error)
         raise SQLAlchemyError(
-            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, table_name)
+            "A SQL Exception {} occurred while transacting with the database on table {} - {}.".format(error,
+                                                                                                       store_table,
+                                                                                                       product_table)
         )
     finally:
         disconnect_from_db(conn)
 
-    return data_van_all
+    return data_stock_all
+
+
+# Select stock in specific product by store code
+def select_all_stock_in_product(product_sku):
+    r"""
+    Get the store stock in a single product looking for by product sku.
+
+    :param product_sku: SKU of product to find stock in a store.
+    :return data_van_by_status: Dictionary that contains all the Van's data by specific status.
+    """
+
+    cfg = Util.get_config_constant_file()
+
+    conn = None
+    cursor = None
+
+    stock_data_by_sku = []
+    data_stock_all = dict()
+
+    store_table = cfg['DB_OBJECTS']['STORE_TABLE']
+    product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
+
+    try:
+
+        conn = session_to_db()
+
+        cursor = conn.cursor()
+
+        sql_stock_by_sku = " SELECT " \
+                           "   store.store_code, " \
+                           "   store.store_name, " \
+                           "   prod.product_sku, " \
+                           "   prod.product_stock " \
+                           " FROM {} store, {} prod " \
+                           " WHERE store.id_store = prod.product_store_id " \
+                           " AND store.store_code = %s " \
+                           " AND prod.product_sku = %s".format(store_table, product_table)
+
+        cursor.execute(sql_stock_by_sku, (store_code, product_sku,))
+
+        result = cursor.fetchall()
+
+        if not Util.validate_store_code_syntax(store_code):
+            logger.error('Can not read the recordset: {}, because the store code is not valid'.format(store_code))
+
+        if result is None:
+            logger.error('Can not read the recordset: {}, '
+                         'because is not stored on table: {}'.format(store_code, table_name))
+            raise SQLAlchemyError(
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
+            )
+
+        for stock_data in result:
+
+            code_store = stock_data['store_code']
+            name_store = stock_data['store_name']
+            sku_product = stock_data['product_sku']
+            stock_product = stock_data['product_stock']
+
+            logger.info('Product Stock: %s', 'CodeStore: {}, '
+                                             'NameStore: {}, '
+                                             'SKU: {}, '
+                                             'Stock: {} '.format(code_store,
+                                                                 name_store,
+                                                                 sku_product,
+                                                                 stock_product))
+
+            stock_data_by_sku += [{
+                "ProductStock": {
+                    "CodeStore": code_store,
+                    "NameStore": name_store,
+                    "SKU": sku_product,
+                    "Stock": stock_product,
+                }
+            }]
+
+        close_cursor(cursor)
+
+        data_stock_all = json.dumps(stock_data_by_sku)
+
+    except SQLAlchemyError as error:
+        conn.rollback()
+        logger.exception('An exception occurred while execute transaction: %s', error)
+        raise SQLAlchemyError(
+            "A SQL Exception {} occurred while transacting with the database on table {} - {}.".format(error,
+                                                                                                       store_table,
+                                                                                                       product_table)
+        )
+    finally:
+        disconnect_from_db(conn)
+
+    return data_stock_all
 
 
 class UsersAuth(Base):
@@ -1100,23 +1220,3 @@ def get_data_user_authentication(session, table_name, user_name):
 
     return user_auth_data
 
-
-# Define y obtiene el configurador para las constantes del sistema:
-def get_config_constant_file():
-    """
-    Contiene la obtencion del objeto config
-    para setear datos de constantes en archivo
-    configurador.
-
-    :return object: ocfg object, contain the Map to the constants allowed in Constants File configuration.
-    """
-
-    # PROD
-    _constants_file = "/app/constants/constants.yml"
-
-    # TEST
-    # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
-
-    cfg = Const.get_constants_file(_constants_file)
-
-    return cfg

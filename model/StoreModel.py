@@ -17,7 +17,7 @@ import uuid
 class StoreModel:
 
     r"""
-    id_store: UUID único para identificar una tienda
+    id_store: ID único para identificar una tienda
     store_name: Nombre de la tienda
     store_code: Codigo unico de la tienda (puede ser alfanumerico)
     store_external_number: Numero exterior del domicilio de la tienda
@@ -33,7 +33,7 @@ class StoreModel:
 
     cfg = None
 
-    id_store = str()
+    id_store = int()
     store_code = str()
     store_name = str()
     store_external_number = str()
@@ -60,7 +60,7 @@ class StoreModel:
                  last_update_date):
         self.cfg = self.get_config_constant_file()
 
-        self.id_store = uuid.uuid4()
+        self.id_store = uuid.uuid4().int
         self.store_code = code_store
         self.store_name = name_store
         self.store_external_number = external_number_store
