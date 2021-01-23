@@ -1,18 +1,18 @@
 # Cargamos Test Microservice
-API Rest Microservice - Urbvan postulation Test
+API Rest Microservice - Cargamos postulation Test
 
 This README sets the use of this application to deploy the microservice API Rest.
 
 ### What is this application for? ###
 
-* Management of Van vehicle data on a database.
-  Search, Create, Update and Delete Van data on database. 
-* Version: v.1.1.A10.5
+* Management of Cargamos E-Commerce data on a database.
+  Search, Create, Update and Delete stock and stores data on database. 
+* Version: v.1.1.A18.5
 * [API Microservice Documentation](https://urbvan-microservice-test.herokuapp.com/)
 
 ### How do I get set up/deploy it? ###
 
-1.- Go to the GitHub remote repository: [GitHub remote microservice repository](https://github.com/jorgeMorfinezM/urbvan_test_microservice) and validate the 
+1.- Go to the GitHub remote repository: [GitHub remote microservice repository](https://github.com/jorgeMorfinezM/cargamos_api_test) and validate the 
 steps of this Readme deployment documentation/API code and general data.
 
 2.- On your CLI (Command Line Interface) tool, clone the remote repository from the 1st step using the version control 
@@ -67,9 +67,9 @@ this link can also be found under the Settings tab, in the Domains and certifica
 
 3.- Clone the repository:
 
-    3.1. Use Git to clone urbvan-microservice-test's source code to your local machine. First execute command line: 
-      `$ heroku git:clone -a urbvan-microservice-test`. 
-    3.2.- Then, by command line, access to your local repository using: `$ cd urbvan-microservice-test`
+    3.1. Use Git to clone cargamos-api-test's source code to your local machine. First execute command line: 
+      `$ heroku git:clone -a cargamos-api-test`. 
+    3.2.- Then, by command line, access to your local repository using: `$ cd cargamos-api-test`
 
 4.- Deploy your changes. Make some changes to the code you just cloned and deploy them to Heroku using Git.
 
