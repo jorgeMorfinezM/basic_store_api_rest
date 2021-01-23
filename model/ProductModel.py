@@ -281,3 +281,11 @@ class ProductModel:
     @classmethod
     def set_product_weight(cls, product_weight):
         cls.product_weight = product_weight
+
+    def valid_product_published(self, published):
+        if published is self.product_published:
+            return True
+
+    def valid_manage_stock(self, manage_stock):
+        if manage_stock is self.product_manage_stock:
+            return True

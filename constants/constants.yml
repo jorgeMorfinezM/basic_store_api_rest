@@ -60,7 +60,7 @@ DB_COLUMNS_DATA:
 	STATUS: product_status
 	PUBLISHED: product_published
 	MANAGE_STOCK: product_manage_stock
-	LENHTH: product_length
+	LENGTH: product_length
 	WIDTH: product_width
 	HEIGHT: product_height
 	WEIGHT: product_weight

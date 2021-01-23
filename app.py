@@ -222,11 +222,11 @@ def manage_van_requested_data(data_van):
 
                 uuid_van = van_obj.get_uuid_van()
 
-                response_order = urbvan_obj.manage_van_vehicle_data(uuid_van,
-                                                                    plates_van,
-                                                                    economic_number_van,
-                                                                    seats_van,
-                                                                    status_van)
+                response_order = urbvan_obj.manage_store_data(uuid_van,
+                                                              plates_van,
+                                                              economic_number_van,
+                                                              seats_van,
+                                                              status_van)
 
                 van_data_response = json.loads(response_order)
 
