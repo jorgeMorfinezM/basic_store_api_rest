@@ -80,6 +80,6 @@ this link can also be found under the Settings tab, in the Domains and certifica
 ### Where do I find the documentation for the App? ###
 
 * [Repo owner or admin](mailto:jorge.morfinez.m@gmail.com) 
-* [Repository Workspace](https://github.com/jorgeMorfinezM/urbvan_test_microservice)
-* [API Use Documentation](https://urbvan-microservice-test.herokuapp.com/)
+* [Repository Workspace](https://github.com/jorgeMorfinezM/cargamos_api_test)
+* [API Use Documentation](https://cargamos-api-test.herokuapp.com/)
 * [API Design Documentation](shorturl.at/nsMSX)
