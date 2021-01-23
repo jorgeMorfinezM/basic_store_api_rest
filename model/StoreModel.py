@@ -10,7 +10,7 @@ __history__ = """ """
 __version__ = "1.1.A19.1 ($Rev: 1 $)"
 
 
-from constants.constants import Constants
+from utilities.Utility import Utility as Util
 import uuid
 
 
@@ -30,8 +30,6 @@ class StoreModel:
     creation_date: Fecha de alta de la tienda
     last_update_date: Fecha de actualizacion de los datos de tienda
     """
-
-    cfg = None
 
     id_store = int()
     store_code = str()
@@ -58,7 +56,6 @@ class StoreModel:
                  minimum_inventory,
                  creation_date,
                  last_update_date):
-        self.cfg = self.get_config_constant_file()
 
         self.id_store = uuid.uuid4().int
         self.store_code = code_store
@@ -178,24 +175,3 @@ class StoreModel:
         if product_stock >= self.store_min_inventory:
             stock_valid = True
         return stock_valid
-
-    # Define y obtiene el configurador para las constantes del sistema:
-    @classmethod
-    def get_config_constant_file(cls):
-        """
-        Contiene la obtencion del objeto config
-        para setear datos de constantes en archivo
-        configurador.
-
-        :return object: ocfg object, contain the Map to the constants allowed in Constants File configuration.
-        """
-
-        # PROD
-        _constants_file = "/app/constants/constants.yml"
-
-        # TEST
-        # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
-
-        cls.cfg = Constants.get_constants_file(_constants_file)
-
-        return cls.cfg

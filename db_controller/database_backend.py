@@ -9,10 +9,10 @@ there isn't already one available (check if there are any issues with this).
 
 Documentation:
     About the Van data on the database to generate CRUD operations from endpoint of the API:
-    - Insert Van data
-    - Update Van data
-    - Delete Van data
-    - Search Van data by UUID
+    - Insert Store data
+    - Update Store data
+    - Delete Store data
+    - Search Store data by ID
     - Search Van data by Status
 
     About the User to authenticate request endpoints on the API adding security to the operations:
@@ -27,7 +27,6 @@ __license__ = ""
 __history__ = """ """
 __version__ = "1.1.A19.1 ($Rev: 1 $)"
 
-import re
 import json
 import logging
 from datetime import datetime
@@ -58,7 +57,7 @@ def init_connect_db():
     """
     init_cnx_db_data = []
 
-    cfg = get_config_constant_file()
+    cfg = Util.get_config_constant_file()
 
     # TEST:
     db_host = cfg['DB_RDS']['HOST_DB']
@@ -209,54 +208,19 @@ def get_datenow_from_db():
     return last_updated_date
 
 
-def get_nextval_economic_number_van(conn):
-    r"""
-    Get the next value number to set as part of Economic Number in a Van attribute.
-    Use it to create a new Van register on the database.
-
-    :param conn: Object to create a session to connect to the database.
-    :return economic_number_nextval: The next value data to set to the Van Economic Number.
-    """
-
-    cursor = None
-    economic_number_nextval = int()
-    sql_nextval_seq = ""
-
-    try:
-        sql_nextval_seq = "SELECT nextval('urbvan.eco_num_van')"
-
-        cursor = create_cursor(conn)
-
-        cursor.execute(sql_nextval_seq)
-
-        economic_number_nextval = cursor.fetchone()
-
-        close_cursor(cursor)
-
-        if economic_number_nextval:
-            return economic_number_nextval
-
-    except SQLAlchemyError as error:
-        conn.rollback()
-        logger.exception('An exception occurred while execute transaction: %s', error)
-        raise SQLAlchemyError(
-            "A SQL Exception {} occurred while transacting with the database.".format(error)
-        )
-
-
 def exists_row_registered(table_name, column_name, data_find):
     r"""
     Looking for a user by name on the database to valid authentication.
 
     :param table_name:
-    :param column_name: The user name to valid authentication on the API.
-    :param data_find:
+    :param column_name: The column name to valid existence on the db.
+    :param data_find: The data to filter and looking for if a row exists registered.
     :return result: Boolean to valid if the data exists on the table.
     """
 
     conn = session_to_db()
 
-    cursor = conn.cursor()
+    cursor = create_cursor(conn)
 
     sql_check = "SELECT EXISTS(SELECT 1 FROM {} WHERE {} = {} LIMIT 1)".format(table_name, column_name, data_find)
 
@@ -264,8 +228,8 @@ def exists_row_registered(table_name, column_name, data_find):
 
     result = cursor.fetchone()[0]
 
-    disconnect_from_db(conn)
     close_cursor(cursor)
+    disconnect_from_db(conn)
 
     return result
 
@@ -289,7 +253,7 @@ def exists_data_row(table_name, column_name, column_filter1, value1, column_filt
 
     try:
         conn = session_to_db()
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         sql_exists = f"SELECT {column_name} FROM {table_name} " \
                      f"WHERE {column_filter1} = {value1} AND {column_filter2} = '{value2}'"
@@ -297,8 +261,6 @@ def exists_data_row(table_name, column_name, column_filter1, value1, column_filt
         cursor.execute(sql_exists)
 
         row_exists = cursor.fetchall()
-
-        # row_exists = session.execute(sql_exists)
 
         for r_e in row_exists:
 
@@ -350,7 +312,7 @@ def validate_transaction(table_name,
 
     try:
         conn = session_to_db()
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         sql_exists = 'SELECT {} FROM {} WHERE {} = {} AND {} = {} AND {} = {}'.format(column_name, table_name,
                                                                                       column_filter1, value1,
@@ -388,7 +350,7 @@ def validate_transaction(table_name,
 
 class StoreModelDb(Base):
     r"""
-    Class to instance the data of a Van on the database.
+    Class to instance the data of a Store on the database.
     Transactions:
      - Insert: Add Van data to the database if not exists.
      - Update: Update Van data on the database if exists.
@@ -437,7 +399,7 @@ class StoreModelDb(Base):
 # Add Store data to insert the row on the database
 def insert_new_store(store_obj: StoreModel):
     r"""
-    Transaction to add data of a Van and inserted on database.
+    Transaction to add data of a store and inserted on database.
     The data that you can insert are:
 
     :param store_obj: Store object model to add new store data.
@@ -453,7 +415,7 @@ def insert_new_store(store_obj: StoreModel):
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         table_name = cfg['DB_OBJECTS']['STORE_TABLE']
 
@@ -555,7 +517,7 @@ def insert_new_store(store_obj: StoreModel):
 # Update Store data registered
 def update_store_data(data_store):
     r"""
-    Transaction to update data of a Van registered on database.
+    Transaction to update data of a store registered on database.
     The data that you can update are:
 
     :param data_store: Dictionary of all data store to update.
@@ -571,7 +533,7 @@ def update_store_data(data_store):
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         last_update_date = get_datenow_from_db()
 
@@ -657,7 +619,7 @@ def update_store_data(data_store):
                 "Message": "Store not updated",
             }
 
-            logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(store_id,
+            logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(store_id,
                                                                                                       table_name))
             raise SQLAlchemyError(
                 "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
@@ -675,14 +637,13 @@ def update_store_data(data_store):
     return json.dumps(store_data_updated)
 
 
-# Delete store registered by id and code
-def delete_store_data(store_id, store_code):
+# Delete store registered by id
+def delete_store_data(store_code):
     r"""
-    Transaction to delete a Van data registered on database from his uuid and plates.
+    Transaction to delete a Store data registered on database from his code.
 
-    :param store_id: Id to looking for a Store data to delete.
     :param store_code: Code to looking for a Store data to delete.
-    :return van_data_delete: Dictionary contains Van data deleted.
+    :return store_data_delete: Dictionary contains Van data deleted.
     """
 
     conn = None
@@ -694,18 +655,11 @@ def delete_store_data(store_id, store_code):
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         table_name = cfg['DB_OBJECTS']['STORE_TABLE']
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
-                                                                                                          table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
+        store_id = select_store_id(store_code)
 
         # delete row to database
         sql_delete_van = "DELETE FROM {} WHERE id_store=%s AND store_code=%s".format(table_name)
@@ -727,20 +681,12 @@ def delete_store_data(store_id, store_code):
                                      'id_store', store_id,
                                      'store_code', store_code)
 
-        if not str(store_id) in str(row_exists):
+        if str(store_id) in str(row_exists):
             store_data_deleted = {
                 "IdStore": store_id,
                 "CodeStore": store_code,
                 "Message": "Store not deleted",
             }
-
-            logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(store_id,
-                                                                                                     table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
 
     except SQLAlchemyError as error:
         conn.rollback()
@@ -757,9 +703,9 @@ def delete_store_data(store_id, store_code):
 # Select all data store by store code from db
 def select_by_store_code(store_code):
     r"""
-    Get all the Van's data looking for specific status on database.
+    Get all the Store's data looking for specific store code on database.
 
-    :param store_code:
+    :param store_code: The code of the store to looking for his data.
     :return data_store_by_code: Dictionary that contains all the Store's data by specific code.
     """
 
@@ -775,7 +721,7 @@ def select_by_store_code(store_code):
 
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         table_name = cfg['DB_OBJECTS']['STORE_TABLE']
 
@@ -843,17 +789,17 @@ def select_by_store_code(store_code):
                                                       city_address,
                                                       country_address)
 
-            logger.info('Van Registered: %s', 'IdStore: {}, '
-                                              'CodeStore: {}, '
-                                              'NameStore: {}, '
-                                              'AddressStore: {}, '
-                                              'MinimumStock: {}, '
-                                              'CreationDate: {} '.format(id_store,
-                                                                         code_store,
-                                                                         name_store,
-                                                                         address_store,
-                                                                         minimum_stock,
-                                                                         fecha_creacion))
+            logger.info('Store Registered: %s', 'IdStore: {}, '
+                                                'CodeStore: {}, '
+                                                'NameStore: {}, '
+                                                'AddressStore: {}, '
+                                                'MinimumStock: {}, '
+                                                'CreationDate: {} '.format(id_store,
+                                                                           code_store,
+                                                                           name_store,
+                                                                           address_store,
+                                                                           minimum_stock,
+                                                                           fecha_creacion))
 
             store_data_by_code += [{
                 "Store": {
@@ -908,7 +854,7 @@ def select_stock_in_product(store_code, product_sku):
 
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         sql_stock_by_sku = " SELECT " \
                            "   store.store_code, " \
@@ -975,7 +921,7 @@ def select_stock_in_product(store_code, product_sku):
     return data_stock_all
 
 
-# Select stock in specific product by store code
+# Select all stock in specific product code
 def select_all_stock_in_product(product_sku):
     r"""
     Get the store stock in a single product looking for by product sku.
@@ -999,7 +945,7 @@ def select_all_stock_in_product(product_sku):
 
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         sql_stock_by_sku = " SELECT " \
                            "   store.store_code, " \
@@ -1064,11 +1010,11 @@ def select_all_stock_in_product(product_sku):
 
 class ProductModelDb(Base):
     r"""
-        Class to instance the data of a Van on the database.
-        Transactions:
-         - Insert: Add Van data to the database if not exists.
-         - Update: Update Van data on the database if exists.
-        """
+    Class to instance the data of a Van on the database.
+    Transactions:
+     - Insert: Add Product data to the database if not exists.
+     - Update: Update Product data on the database if exists.
+    """
 
     cfg = Util.get_config_constant_file()
 
@@ -1100,135 +1046,217 @@ class ProductModelDb(Base):
     creation_date = Column(cfg['DB_COLUMNS_DATA']['PRODUCT_API']['CREATION_DATE'], String)
     last_update_date = Column(cfg['DB_COLUMNS_DATA']['PRODUCT_API']['LAST_UPDATE_DATE'], String)
 
-    def manage_product_data(self, id_store, name_store, code_store, street_store, ext_num_store, suburb_store,
-                            city_store, country_store, postal_code_store, minimum_stock, store_obj):
+    def manage_product_data(self, product_input_dic):
 
-        store_data = {}
-        store_dict = {}
+        product_data = {}
 
-        store_dict = Util.set_data_input_store_dict(id_store, code_store, name_store, street_store, ext_num_store,
-                                                    suburb_store, city_store, country_store, postal_code_store,
-                                                    minimum_stock)
+        product_sku = product_input_dic.get("product_sku")
+        product_store_code = product_input_dic.get("product_store_code")
+
+        product_store_id = select_store_id(product_store_code)
+        product_id = select_product_id(product_sku, product_store_code)
 
         if exists_data_row(self.__tablename__,
-                           self.id_store,
-                           self.id_store,
-                           id_store,
-                           self.code_store,
-                           code_store):
+                           self.id_product,
+                           self.id_product,
+                           product_id,
+                           self.store_id_product,
+                           product_store_id):
 
-            store_data = update_store_data(self.__tablename__)
+            product_data = update_product_data(product_input_dic)
         else:
-            store_data = insert_new_store(self.__tablename__, store_obj)
+            product_data = insert_new_product(product_input_dic)
 
-        return store_data
+        return product_data
 
 
-# Add Store data to insert the row on the database
-def insert_new_store(store_obj: StoreModel):
+# Add Product data to insert the row on the database
+def insert_new_product(data_product):
     r"""
-    Transaction to add data of a Van and inserted on database.
+    Transaction to add data of a product and inserted on database.
     The data that you can insert are:
 
-    :param store_obj: Store object model to add new store data.
-    :return store_data_inserted: Dictionary that contains Store data inserted on db.
+    :param data_product: Dictionary of all data product to insert.
+    :return product_data_inserted: Dictionary that contains product data inserted on db.
     """
 
     conn = None
     cursor = None
-    store_data_inserted = dict()
+    product_data_inserted = dict()
 
     cfg = Util.get_config_constant_file()
 
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
-        table_name = cfg['DB_OBJECTS']['STORE_TABLE']
+        table_name = cfg['DB_OBJECTS']['PRODUCT_TABLE']
 
-        created_at = get_datenow_from_db()
+        creation_date = get_datenow_from_db()
         last_update_date = get_datenow_from_db()
 
-        store_id = store_obj.get_id_store()
-        store_code = store_obj.get_store_code()
-        store_name = store_obj.get_store_name()
-        store_external_number = store_obj.get_external_number()
-        store_street_address = store_obj.get_street_address()
-        store_suburb_address = store_obj.get_suburb_address()
-        store_city_address = store_obj.get_city_address()
-        store_country_address = store_obj.get_country_address()
-        store_zippostal_code = store_obj.get_zip_postal_address()
-        store_min_inventory = store_obj.get_minimum_stock()
+        product_sku = data_product.get('product_sku')
+        product_unspc = data_product.get('product_unspc')
+        product_brand = data_product.get('product_brand')
+        product_category_id = data_product.get('category_id')
+        product_parent_category_id = data_product.get('parent_category_id')
+        product_uom = data_product.get('unit_of_measure')
+        product_stock = data_product.get('product_stock')
+        product_store_code = data_product.get('product_store_code')
+        product_name = data_product.get('product_name')
+        product_title = data_product.get('product_title')
+        product_long_description = data_product.get('product_long_description')
+        product_photo = data_product.get('product_photo')
+        product_price = data_product.get('product_price')
+        product_tax = data_product.get('product_tax')
+        product_currency = data_product.get('product_currency')
+        product_status = data_product.get('product_status')
+        product_published = data_product.get('product_published')
+        product_manage_stock = data_product.get('product_manage_stock')
+        product_length = data_product.get('product_length')
+        product_width = data_product.get('product_width')
+        product_height = data_product.get('product_height')
+        product_weight = data_product.get('product_weight')
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
-                                                                                                          table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
+        product_store_id = select_store_id(product_store_code)
+        product_id = select_product_id(product_sku, product_store_id)
 
-        data_insert = (store_id, store_code, store_name, store_external_number, store_street_address,
-                       store_suburb_address, store_city_address, store_country_address, store_zippostal_code,
-                       store_min_inventory,)
+        sql_product_insert = 'INSERT INTO {} ' \
+                             '    (product_id, ' \
+                             '     product_sku, ' \
+                             '     product_unspc, ' \
+                             '     product_brand, ' \
+                             '     category_id, ' \
+                             '     parent_category_id, ' \
+                             '     unit_of_measure, ' \
+                             '     product_stock, ' \
+                             '     product_store_id, ' \
+                             '     product_name, ' \
+                             '     product_title, ' \
+                             '     product_long_description, ' \
+                             '     product_photo, ' \
+                             '     product_price, ' \
+                             '     product_tax, ' \
+                             '     product_currency, ' \
+                             '     product_status, ' \
+                             '     product_published, ' \
+                             '     product_manage_stock, ' \
+                             '     product_length, ' \
+                             '     product_width, ' \
+                             '     product_height, ' \
+                             '     product_weight, ' \
+                             '     creation_date, ' \
+                             '     last_update_date) ' \
+                             'VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ' \
+                             '%s, %s, %s, %s, %d)'.format(table_name)
 
-        sql_store_insert = 'INSERT INTO {} ' \
-                           '(id_store, ' \
-                           'store_name, ' \
-                           'store_code, ' \
-                           'store_street_address, ' \
-                           'store_external_number, ' \
-                           'store_suburb_address, ' \
-                           'store_city_address, ' \
-                           'store_country_address, ' \
-                           'store_zippostal_code, ' \
-                           'store_min_inventory, ' \
-                           'creation_date, ' \
-                           'last_update_date) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'.format(table_name)
+        data_add_product = (product_id,
+                            product_sku,
+                            product_unspc,
+                            product_brand,
+                            product_category_id,
+                            product_parent_category_id,
+                            product_uom,
+                            product_stock,
+                            product_store_id,
+                            product_name,
+                            product_title,
+                            product_long_description,
+                            product_photo,
+                            product_price,
+                            product_tax,
+                            product_currency,
+                            product_status,
+                            product_published,
+                            product_manage_stock,
+                            product_length,
+                            product_width,
+                            product_height,
+                            product_weight,
+                            creation_date,
+                            last_update_date)
 
-        cursor.execute(sql_store_insert, data_insert)
+        cursor.execute(sql_product_insert, data_add_product)
 
         conn.commit()
 
-        logger.info('Store inserted %s', "{0}, Code: {1}, Name: {2}".format(store_id, store_code, store_name))
+        logger.info('Product inserted %s', "{0}, Code: {1}, Name: {2}".format(table_name, product_sku, product_name))
 
         close_cursor(cursor)
 
-        row_exists = validate_transaction(table_name,
-                                          'id_store',
-                                          'id_store', store_id,
-                                          'store_code', store_code,
-                                          'store_name', store_name)
+        row_exists = exists_data_row(table_name, 'product_id',
+                                     'product_id', product_id,
+                                     'product_store_id', product_store_id)
 
-        address_store = Util.format_store_address(store_street_address,
-                                                  store_external_number,
-                                                  store_suburb_address,
-                                                  store_zippostal_code,
-                                                  store_city_address,
-                                                  store_country_address)
-
-        store_data_inserted = {
-            "IdStore": store_id,
-            "CodeStore": store_code,
-            "NameStore": store_name,
-            "AddressStore": address_store,
-            "MinimumStock": store_min_inventory,
-            "CreationDate": created_at,
-            "Message": "Store Inserted Successful",
-        }
-
-        if not str(store_id) not in str(row_exists):
-            store_data_inserted = {
-                "IdStore": store_id,
-                "CodeStore": store_code,
-                "NameStore": store_name,
-                "AddressStore": address_store,
-                "MinimumStock": store_min_inventory,
-                "CreationDate": created_at,
-                "Message": "Store already Inserted",
+        product_data_inserted += [{
+            "Product": {
+                "IdProduct": product_id,
+                "SKUProduct": product_sku,
+                "UNSPC": product_unspc,
+                "NameProduct": product_name,
+                "TitleProduct": product_title,
+                "BrandProduct": product_brand,
+                "UOMProduct": product_uom,
+                "CategoryIdProduct": product_category_id,
+                "ParentCategoryIdProduct": product_parent_category_id,
+                "StockProduct": product_stock,
+                "CodeStore": product_store_code,
+                "LongDescriptionProduct": product_long_description,
+                "PhotoProduct": product_photo,
+                "Prices": {
+                    "PriceProduct": product_price,
+                    "TaxPriceProduct": product_tax,
+                    "CurrencyPriceProduct": product_currency,
+                },
+                "StatusProduct": product_status,
+                "PublishedProduct": product_published,
+                "ManageStockProduct": product_manage_stock,
+                "Volumetry": {
+                    "LengthProduct": product_length,
+                    "WidthProduct": product_width,
+                    "HeightProduct": product_height,
+                    "WeightProduct": product_weight,
+                },
+                "CreationDate": creation_date,
+                "LastUpdateDate": last_update_date,
             }
+        }]
+
+        if not str(product_id) not in str(row_exists):
+            product_data_inserted += [{
+                "Product": {
+                    "IdProduct": product_id,
+                    "SKUProduct": product_sku,
+                    "UNSPC": product_unspc,
+                    "NameProduct": product_name,
+                    "TitleProduct": product_title,
+                    "BrandProduct": product_brand,
+                    "UOMProduct": product_uom,
+                    "CategoryIdProduct": product_category_id,
+                    "ParentCategoryIdProduct": product_parent_category_id,
+                    "StockProduct": product_stock,
+                    "CodeStore": product_store_code,
+                    "LongDescriptionProduct": product_long_description,
+                    "PhotoProduct": product_photo,
+                    "Prices": {
+                        "PriceProduct": product_price,
+                        "TaxPriceProduct": product_tax,
+                        "CurrencyPriceProduct": product_currency,
+                    },
+                    "StatusProduct": product_status,
+                    "PublishedProduct": product_published,
+                    "ManageStockProduct": product_manage_stock,
+                    "Volumetry": {
+                        "LengthProduct": product_length,
+                        "WidthProduct": product_width,
+                        "HeightProduct": product_height,
+                        "WeightProduct": product_weight,
+                    },
+                    "CreationDate": creation_date,
+                    "LastUpdateDate": last_update_date,
+                }
+            }]
 
     except SQLAlchemyError as error:
         conn.rollback()
@@ -1239,212 +1267,276 @@ def insert_new_store(store_obj: StoreModel):
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(store_data_inserted)
+    return json.dumps(product_data_inserted)
 
 
-# Update Store data registered
-def update_store_data(data_store):
+# Update Product data registered
+def update_product_data(data_product):
     r"""
     Transaction to update data of a Van registered on database.
     The data that you can update are:
 
-    :param data_store: Dictionary of all data store to update.
-    :return store_data_updated: Dictionary that contains Store data updated on db.
+    :param data_product: Dictionary of all data product to update.
+    :return product_data_updated: Dictionary that contains Product data updated on db.
     """
 
     conn = None
     cursor = None
-    store_data_updated = dict()
+    product_data_updated = dict()
 
     cfg = Util.get_config_constant_file()
 
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         last_update_date = get_datenow_from_db()
 
-        table_name = cfg['DB_OBJECTS']['STORE_TABLE']
+        product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
 
-        store_id = data_store.get("store_id")
-        store_code = data_store.get("store_code")
-        store_name = data_store.get("store_name")
-        street_address = data_store("street_address")
-        external_number_address = data_store("external_number_address")
-        suburb_address = data_store.get("suburb_address")
-        city_address = data_store.get("city_address")
-        country_address = data_store.get("country_address")
-        zip_postal_code_address = data_store.get("zip_postal_code_address")
-        minimum_stock = data_store.get("minimum_inventory")
+        product_sku = data_product.get('product_sku')
+        product_unspc = data_product.get('product_unspc')
+        product_brand = data_product.get('product_brand')
+        category_id = data_product.get('category_id')
+        parent_category_id = data_product.get('parent_category_id')
+        unit_of_measure = data_product.get('unit_of_measure')
+        product_stock = data_product.get('product_stock')
+        product_store_code = data_product.get('product_store_code')
+        product_name = data_product.get('product_name')
+        product_title = data_product.get('product_title')
+        product_long_description = data_product.get('product_long_description')
+        product_photo = data_product.get('product_photo')
+        product_price = data_product.get('product_price')
+        product_tax = data_product.get('product_tax')
+        product_currency = data_product.get('product_currency')
+        product_status = data_product.get('product_status')
+        product_published = data_product.get('product_published')
+        manage_stock = data_product.get('product_manage_stock')
+        product_length = data_product.get('product_length')
+        product_width = data_product.get('product_width')
+        product_height = data_product.get('product_height')
+        product_weight = data_product.get('product_weight')
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
-                                                                                                          table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
+        product_store_id = select_store_id(product_store_code)
+        product_id = select_product_id(product_sku, product_store_id)
 
         # update row to database
-        sql_update_store = 'UPDATE {} ' \
-                           'SET store_name=%s, ' \
-                           'store_street_address=%s, ' \
-                           'store_external_number=%s, ' \
-                           'store_suburb_address=%s, ' \
-                           'store_city_address=%s, ' \
-                           'store_country_address=%s, ' \
-                           'store_zippostal_code=%s, ' \
-                           'store_min_inventory=%s, ' \
-                           'last_update_date=%s ' \
-                           'WHERE id_store=%s AND store_code=%s'.format(table_name)
+        sql_update_product = ' UPDATE {} ' \
+                             ' SET product_sku=%s, ' \
+                             '     product_unspc=%s, ' \
+                             '     product_brand=%s, ' \
+                             '     category_id=%s, ' \
+                             '     parent_category_id=%s, ' \
+                             '     unit_of_measure=%s, ' \
+                             '     product_stock=%s, ' \
+                             '     product_name=%s, ' \
+                             '     product_title=%s, ' \
+                             '     product_long_description=%s, ' \
+                             '     product_photo=%s, ' \
+                             '     product_price=%s, ' \
+                             '     product_tax=%s, ' \
+                             '     product_currency=%s, ' \
+                             '     product_status=%s, ' \
+                             '     product_published=%s, ' \
+                             '     product_manage_stock=%s, ' \
+                             '     product_length=%s, ' \
+                             '     product_width=%s, ' \
+                             '     product_height=%s, ' \
+                             '     product_weight=%s, ' \
+                             '     last_update_date=%s' \
+                             ' WHERE product_id={} AND product_store_id={}'.format(product_table,
+                                                                                   product_id,
+                                                                                   product_store_id)
 
-        cursor.execute(sql_update_store, (store_name,
-                                          street_address,
-                                          external_number_address,
-                                          suburb_address,
-                                          city_address,
-                                          country_address,
-                                          zip_postal_code_address,
-                                          minimum_stock,))
-
-        address_store = Util.format_store_address(street_address,
-                                                  external_number_address,
-                                                  suburb_address,
-                                                  zip_postal_code_address,
-                                                  city_address,
-                                                  country_address)
+        cursor.execute(sql_update_product, (product_sku,
+                                            product_unspc,
+                                            product_brand,
+                                            category_id,
+                                            parent_category_id,
+                                            unit_of_measure,
+                                            product_stock,
+                                            product_name,
+                                            product_title,
+                                            product_long_description,
+                                            product_photo,
+                                            product_price,
+                                            product_tax,
+                                            product_currency,
+                                            product_status,
+                                            product_published,
+                                            manage_stock,
+                                            product_length,
+                                            product_width,
+                                            product_height,
+                                            product_weight,
+                                            last_update_date,))
 
         conn.commit()
 
         close_cursor(cursor)
 
-        row_exists = validate_transaction(table_name,
-                                          'id_store',
-                                          'id_store', store_id,
-                                          'store_code', store_code,
-                                          'store_name', store_name)
+        row_exists = validate_transaction(product_table,
+                                          'product_id',
+                                          'product_id', product_id,
+                                          'product_store_id', product_store_id,
+                                          'product_sku', product_sku)
 
-        store_data_updated = {
-            "IdStore": store_id,
-            "CodeStore": store_code,
-            "NameStore": store_name,
-            "AddressStore": address_store,
-            "MinimumStock": minimum_stock,
-            "LastUpdateDate": last_update_date,
-            "Message": "Store Updated Successful",
+        product_data_updated = {
+            "Product": {
+                "IdProduct": product_id,
+                "SKUProduct": product_sku,
+                "UNSPC": product_unspc,
+                "NameProduct": product_name,
+                "TitleProduct": product_title,
+                "BrandProduct": product_brand,
+                "UOMProduct": unit_of_measure,
+                "CategoryIdProduct": category_id,
+                "ParentCategoryIdProduct": parent_category_id,
+                "StockProduct": product_stock,
+                "CodeStore": product_store_code,
+                "LongDescriptionProduct": product_long_description,
+                "PhotoProduct": product_photo,
+                "Prices": {
+                    "PriceProduct": product_price,
+                    "TaxPriceProduct": product_tax,
+                    "CurrencyPriceProduct": product_currency,
+                },
+                "StatusProduct": product_status,
+                "PublishedProduct": product_published,
+                "ManageStockProduct": manage_stock,
+                "Volumetry": {
+                    "LengthProduct": product_length,
+                    "WidthProduct": product_width,
+                    "HeightProduct": product_height,
+                    "WeightProduct": product_weight,
+                },
+                "LastUpdateDate": last_update_date,
+                "Message": "Product data Updated Successful"
+            }
         }
 
-        if not str(store_id) in str(row_exists):
-            store_data_updated = {
-                "IdStore": store_id,
-                "CodeStore": store_code,
-                "NameStore": store_name,
-                "AddressStore": address_store,
-                "MinimumStock": minimum_stock,
-                "LastUpdateDate": last_update_date,
-                "Message": "Store not updated",
+        if str(product_id) not in str(row_exists):
+            product_data_updated = {
+                "Product": {
+                    "IdProduct": product_id,
+                    "SKUProduct": product_sku,
+                    "UNSPC": product_unspc,
+                    "NameProduct": product_name,
+                    "TitleProduct": product_title,
+                    "BrandProduct": product_brand,
+                    "UOMProduct": unit_of_measure,
+                    "CategoryIdProduct": category_id,
+                    "ParentCategoryIdProduct": parent_category_id,
+                    "StockProduct": product_stock,
+                    "CodeStore": product_store_code,
+                    "LongDescriptionProduct": product_long_description,
+                    "PhotoProduct": product_photo,
+                    "Prices": {
+                        "PriceProduct": product_price,
+                        "TaxPriceProduct": product_tax,
+                        "CurrencyPriceProduct": product_currency,
+                    },
+                    "StatusProduct": product_status,
+                    "PublishedProduct": product_published,
+                    "ManageStockProduct": manage_stock,
+                    "Volumetry": {
+                        "LengthProduct": product_length,
+                        "WidthProduct": product_width,
+                        "HeightProduct": product_height,
+                        "WeightProduct": product_weight,
+                    },
+                    "LastUpdateDate": last_update_date,
+                    "Message": "Product not Updated"
+                }
             }
 
-            logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(store_id,
-                                                                                                      table_name))
+            logger.error('Can not read the recordset: {}, beacause is not stored on table: {}'.format(product_id,
+                                                                                                      product_table))
             raise SQLAlchemyError(
-                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(table_name)
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(product_table)
             )
 
     except SQLAlchemyError as error:
         conn.rollback()
         logger.exception('An exception occurred while execute transaction: %s', error)
         raise SQLAlchemyError(
-            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, table_name)
+            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, product_table)
         )
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(store_data_updated)
+    return json.dumps(product_data_updated)
 
 
-# Delete store registered by id and code
-def delete_store_data(store_id, store_code):
+# Delete Product registered by id and code
+def delete_product_data(product_sku, product_store_code):
     r"""
-    Transaction to delete a Van data registered on database from his uuid and plates.
+    Transaction to delete a Product data registered on database.
 
-    :param store_id: Id to looking for a Store data to delete.
-    :param store_code: Code to looking for a Store data to delete.
-    :return van_data_delete: Dictionary contains Van data deleted.
+    :param product_sku: Id to looking for a Store data to delete.
+    :param product_store_code: Code to looking for a Store data to delete.
+    :return product_data_delete: Dictionary contains product data deleted.
     """
 
     conn = None
     cursor = None
-    store_data_deleted = dict()
+    product_data_deleted = dict()
 
     cfg = Util.get_config_constant_file()
 
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
-        table_name = cfg['DB_OBJECTS']['STORE_TABLE']
+        product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
-                                                                                                          table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
+        product_store_id = select_store_id(product_store_code)
+        product_id = select_product_id(product_sku, product_store_id)
 
         # delete row to database
-        sql_delete_van = "DELETE FROM {} WHERE id_store=%s AND store_code=%s".format(table_name)
+        sql_delete_van = "DELETE FROM {} WHERE product_id=%s AND product_store_id=%s".format(product_table)
 
-        cursor.execute(sql_delete_van, (store_id, store_code,))
+        cursor.execute(sql_delete_van, (product_id, product_store_id,))
 
         conn.commit()
 
         close_cursor(cursor)
 
-        store_data_deleted = {
-            "IdStore": store_id,
-            "CodeStore": store_code,
-            "Message": "Store Deleted Successful",
+        product_data_deleted = {
+            "IdProduct": product_id,
+            "SKUProduct": product_sku,
+            "StoreCode": product_store_code,
+            "Message": "Product Deleted Successful",
         }
 
-        row_exists = exists_data_row(table_name,
-                                     'id_store',
-                                     'id_store', store_id,
-                                     'store_code', store_code)
+        row_exists = exists_data_row(product_table,
+                                     'product_id',
+                                     'product_id', product_id,
+                                     'product_store_id', product_store_id)
 
-        if not str(store_id) in str(row_exists):
-            store_data_deleted = {
-                "IdStore": store_id,
-                "CodeStore": store_code,
-                "Message": "Store not deleted",
+        if str(product_id) in str(row_exists):
+            product_data_deleted = {
+                "IdProduct": product_id,
+                "SKUProduct": product_sku,
+                "StoreCode": product_store_code,
+                "Message": "Product not Deleted",
             }
-
-            logger.error('Can not read the recordset: {}, because is not stored on table: {}'.format(store_id,
-                                                                                                     table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
 
     except SQLAlchemyError as error:
         conn.rollback()
         logger.exception('An exception occurred while execute transaction: %s', error)
         raise SQLAlchemyError(
-            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, table_name)
+            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, product_table)
         )
     finally:
         disconnect_from_db(conn)
 
-    return json.dumps(store_data_deleted)
+    return json.dumps(product_data_deleted)
 
 
-# Select all data store by store code from db
+# Select all products by sku from db
 def select_by_product_sku(product_sku):
     r"""
     Get all the product data looking for specific sku on database.
@@ -1465,7 +1557,7 @@ def select_by_product_sku(product_sku):
 
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
         store_table = cfg['DB_OBJECTS']['STORE_TABLE']
@@ -1521,45 +1613,75 @@ def select_by_product_sku(product_sku):
                     "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(product_sku)
                 )
 
-            id_store = store_data['id_store']
-            name_store = store_data['store_name']
-            code_store = store_data['store_code']
-            street_address = store_data['store_street_address']
-            external_number_address = store_data['store_external_number']
-            suburb_address = store_data['store_suburb_address']
-            city_address = store_data['store_city_address']
-            country_address = store_data['store_country_address']
-            zip_postal_code_address = store_data['store_zippostal_code']
-            minimum_stock = store_data['store_min_inventory']
-            fecha_creacion = datetime.strptime(str(store_data['creation_date']), "%Y-%m-%d %H:%M:%S")
-            fecha_actualizacion = datetime.strptime(str(store_data['last_update_date']), "%Y-%m-%d %H:%M:%S")
+            product_id = product_data['product_id']
+            sku_product = product_data['product_sku']
+            product_unspc = product_data['product_unspc']
+            product_brand = product_data['product_brand']
+            category_id = product_data['category_id']
+            parent_category_id = product_data['parent_category_id']
+            unit_of_measure = product_data['unit_of_measure']
+            product_stock = product_data['product_stock']
+            product_store_code = product_data['store_code']
+            product_store_name = product_data['store_name']
+            product_name = product_data['product_name']
+            product_title = product_data['product_title']
+            product_long_description = product_data['product_long_description']
+            product_photo = product_data['product_photo']
+            product_price = product_data['product_price']
+            product_tax = product_data['product_tax']
+            product_currency = product_data['product_currency']
+            product_status = product_data['product_status']
+            product_published = product_data['product_published']
+            product_manage_stock = product_data['product_manage_stock']
+            product_length = product_data['product_length']
+            product_width = product_data['product_width']
+            product_height = product_data['product_height']
+            product_weight = product_data['product_weight']
+            fecha_creacion = datetime.strptime(str(product_data['creation_date']), "%Y-%m-%d %H:%M:%S")
+            fecha_actualizacion = datetime.strptime(str(product_data['last_update_date']), "%Y-%m-%d %H:%M:%S")
 
-            address_store = Util.format_store_address(street_address,
-                                                      external_number_address,
-                                                      suburb_address,
-                                                      zip_postal_code_address,
-                                                      city_address,
-                                                      country_address)
+            logger.info('Van Registered: %s', 'IdProduct: {}, '
+                                              'SKUProduct: {}, '
+                                              'UNSPC: {}, '
+                                              'NameProduct: {}, '
+                                              'TitleProduct: {}, '
+                                              'BrandProduct: {} '.format(product_id,
+                                                                         product_sku,
+                                                                         product_unspc,
+                                                                         product_name,
+                                                                         product_title,
+                                                                         product_brand))
 
-            logger.info('Van Registered: %s', 'IdStore: {}, '
-                                              'CodeStore: {}, '
-                                              'NameStore: {}, '
-                                              'AddressStore: {}, '
-                                              'MinimumStock: {}, '
-                                              'CreationDate: {} '.format(id_store,
-                                                                         code_store,
-                                                                         name_store,
-                                                                         address_store,
-                                                                         minimum_stock,
-                                                                         fecha_creacion))
-
-            store_data_by_code += [{
-                "Store": {
-                    "IdStore": id_store,
-                    "CodeStore": code_store,
-                    "NameStore": name_store,
-                    "AddressStore": address_store,
-                    "MinimumStock": minimum_stock,
+            product_data_by_sku += [{
+                "Product": {
+                    "IdProduct": product_id,
+                    "SKUProduct": sku_product,
+                    "UNSPC": product_unspc,
+                    "NameProduct": product_name,
+                    "TitleProduct": product_title,
+                    "BrandProduct": product_brand,
+                    "UOMProduct": unit_of_measure,
+                    "CategoryIdProduct": category_id,
+                    "ParentCategoryIdProduct": parent_category_id,
+                    "StockProduct": product_stock,
+                    "CodeStore": product_store_code,
+                    "NameStore": product_store_name,
+                    "LongDescriptionProduct": product_long_description,
+                    "PhotoProduct": product_photo,
+                    "Prices": {
+                        "PriceProduct": product_price,
+                        "TaxPriceProduct": product_tax,
+                        "CurrencyPriceProduct": product_currency,
+                    },
+                    "StatusProduct": product_status,
+                    "PublishedProduct": product_published,
+                    "ManageStockProduct": product_manage_stock,
+                    "Volumetry": {
+                        "LengthProduct": product_length,
+                        "WidthProduct": product_width,
+                        "HeightProduct": product_height,
+                        "WeightProduct": product_weight,
+                    },
                     "CreationDate": fecha_creacion,
                     "LastUpdateDate": fecha_actualizacion,
                 }
@@ -1567,18 +1689,18 @@ def select_by_product_sku(product_sku):
 
         close_cursor(cursor)
 
-        data_store_all = json.dumps(store_data_by_code)
+        data_product_all = json.dumps(product_data_by_sku)
 
     except SQLAlchemyError as error:
         conn.rollback()
         logger.exception('An exception occurred while execute transaction: %s', error)
         raise SQLAlchemyError(
-            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, table_name)
+            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error, product_table)
         )
     finally:
         disconnect_from_db(conn)
 
-    return data_store_all
+    return data_product_all
 
 
 # Update stock by product sku and store_code
@@ -1602,7 +1724,7 @@ def update_product_store_stock(stock, product_sku, store_code):
     try:
         conn = session_to_db()
 
-        cursor = conn.cursor()
+        cursor = create_cursor(conn)
 
         last_update_date = get_datenow_from_db()
 
@@ -1670,6 +1792,116 @@ def update_product_store_stock(stock, product_sku, store_code):
     return json.dumps(product_stock_updated)
 
 
+def select_store_id(store_code):
+    r"""
+    Get the store identifier of a Store registered.
+
+    :param store_code: Code store to find the Id.
+    :return store_id_by_code: Id of the store by his code.
+    """
+
+    cfg = Util.get_config_constant_file()
+
+    conn = None
+    cursor = None
+
+    store_id_by_code = int()
+
+    store_table = cfg['DB_OBJECTS']['STORE_TABLE']
+
+    try:
+        conn = session_to_db()
+
+        cursor = create_cursor(conn)
+
+        if not Util.validate_store_code_syntax(store_code):
+            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
+                                                                                                          store_table))
+            raise mvc_exc.ItemNotStored(
+                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
+                    store_code, store_table
+                )
+            )
+
+        sql_store_id = "SELECT id_store FROM {} WHERE store_code  = %s".format(store_table)
+
+        cursor.execute(sql_store_id, (store_code,))
+
+        store_id_by_code = cursor.fetchone()[0]
+
+        if store_id_by_code is None:
+            logger.error('Can not read the recordset: {}, '
+                         'because is not stored on table: {}'.format(store_code, store_table))
+            raise SQLAlchemyError(
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(store_table)
+            )
+
+        close_cursor(cursor)
+
+    except SQLAlchemyError as error:
+        conn.rollback()
+        logger.exception('An exception occurred while execute transaction: %s', error)
+        raise SQLAlchemyError(
+            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error,
+                                                                                                  store_table)
+        )
+    finally:
+        disconnect_from_db(conn)
+
+    return store_id_by_code
+
+
+def select_product_id(product_sku, product_store_id):
+    r"""
+    Get the product identifier of a Product registered.
+
+    :param product_sku: Code SKU of product to find the Id.
+    :param product_store_id: Id of the store assign to the product.
+    :return data_van_by_status: Dictionary that contains all the Van's data by specific status.
+    """
+
+    cfg = Util.get_config_constant_file()
+
+    conn = None
+    cursor = None
+
+    product_id_by_code = int()
+
+    product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
+
+    try:
+        conn = session_to_db()
+
+        cursor = create_cursor(conn)
+
+        sql_product_id = "SELECT product_id FROM {} WHERE product_sku=%s AND product_store_id=%s".format(product_table)
+
+        cursor.execute(sql_product_id, (product_sku, product_store_id,))
+
+        product_id_by_code = cursor.fetchone()[0]
+
+        if product_id_by_code is None:
+            logger.error('Can not read the recordset: {}, '
+                         'because is not stored on table: {}'.format(product_sku, product_table))
+            raise SQLAlchemyError(
+                "Can\'t read data because it\'s not stored in table {}. SQL Exception".format(product_table)
+            )
+
+        close_cursor(cursor)
+
+    except SQLAlchemyError as error:
+        conn.rollback()
+        logger.exception('An exception occurred while execute transaction: %s', error)
+        raise SQLAlchemyError(
+            "A SQL Exception {} occurred while transacting with the database on table {}.".format(error,
+                                                                                                  product_table)
+        )
+    finally:
+        disconnect_from_db(conn)
+
+    return product_id_by_code
+
+
 class UsersAuth(Base):
     r"""
     Class to instance User data to authenticate the API.
@@ -1678,7 +1910,7 @@ class UsersAuth(Base):
      - Update: Update user data on the database if exists.
     """
 
-    cfg = get_config_constant_file()
+    cfg = Util.get_config_constant_file()
 
     __tablename__ = cfg['DB_AUTH_OBJECT']['USERS_AUTH']
 
@@ -1724,11 +1956,11 @@ def validate_user_exists(user_name):
     :return result: Boolean to valid if the user name exists to authenticate the API.
     """
 
-    cfg = get_config_constant_file()
+    cfg = Util.get_config_constant_file()
 
     conn = session_to_db()
 
-    cursor = conn.cursor()
+    cursor = create_cursor(conn)
 
     table_name = cfg['DB_AUTH_OBJECT']['USERS_AUTH']
 
@@ -1737,6 +1969,9 @@ def validate_user_exists(user_name):
     cursor.execute(sql_check)
 
     result = cursor.fetchone()
+
+    close_cursor(cursor)
+    disconnect_from_db(conn)
 
     return result
 
@@ -1750,7 +1985,7 @@ def update_user_password_hashed(user_name, password_hash):
     :param password_hash: The password hashed to authenticate on the API.
     """
 
-    cfg = get_config_constant_file()
+    cfg = Util.get_config_constant_file()
 
     conn = session_to_db()
 
@@ -1770,6 +2005,7 @@ def update_user_password_hashed(user_name, password_hash):
     conn.commit()
 
     close_cursor(cursor)
+    disconnect_from_db(conn)
 
 
 def insert_user_authenticated(user_id, user_name, user_password, password_hash):
@@ -1804,9 +2040,11 @@ def insert_user_authenticated(user_id, user_name, user_password, password_hash):
     logger.info('Usuario insertado %s', "{0}, User_Name: {1}".format(user_id, user_name))
 
     close_cursor(cursor)
+    disconnect_from_db(conn)
 
 
 # Function not used.
+# Deprecated
 def get_data_user_authentication(session, table_name, user_name):
     user_auth = []
 

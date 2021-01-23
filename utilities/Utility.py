@@ -22,8 +22,7 @@ class Utility:
 
         math_store_code = re.match(regex_store_code, store_code, re.M | re.I)
 
-        if math_store_code:
-            return True
+        return math_store_code
 
     # Format Store Address
     @staticmethod
@@ -60,22 +59,58 @@ class Utility:
 
         return json.dumps(store_dict)
 
+    @staticmethod
+    def set_data_input_product_dict(product_sku, product_unspc, product_brand, product_category_id,
+                                    product_parent_category_id, product_uom, product_stock, product_store_code,
+                                    product_name, product_title, product_long_description, product_photo, product_price,
+                                    product_tax_price, product_currency, product_status, product_published,
+                                    product_manage_stock, product_length, product_width, product_height, product_weight):
+
+        product_dict = {
+            'product_sku': product_sku,
+            'product_unspc': product_unspc,
+            'product_brand': product_brand,
+            'category_id': product_category_id,
+            'parent_category_id': product_parent_category_id,
+            'unit_of_measure': product_uom,
+            'product_stock': product_stock,
+            'product_store_code': product_store_code,
+            'product_name': product_name,
+            'product_title': product_title,
+            'product_long_description': product_long_description,
+            'product_photo': product_photo,
+            'product_price': product_price,
+            'product_tax': product_tax_price,
+            'product_currency': product_currency,
+            'product_status': product_status,
+            'product_published': product_published,
+            'product_manage_stock': product_manage_stock,
+            'product_length': product_length,
+            'product_width': product_width,
+            'product_height': product_height,
+            'product_weight': product_weight,
+        }
+
+        return json.dumps(product_dict)
+
+    @staticmethod
+    def decimal_formatting(value):
+        return ('%.2f' % value).rstrip('0').rstrip('.')
+
     # Define y obtiene el configurador para las constantes del sistema:
     @staticmethod
     def get_config_constant_file():
         """
-        Contiene la obtencion del objeto config
-        para setear datos de constantes en archivo
-        configurador.
+        Get the config object to charge the constants configurator.
 
-        :return object: ocfg object, contain the Map to the constants allowed in Constants File configuration.
+        :return object: cfg object, contain the Map to the constants allowed in Constants File configuration.
         """
 
         # PROD
         _constants_file = "/app/constants/constants.yml"
 
         # TEST
-        # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
+        # _constants_file = "/home/jorgemm/Documentos/tech_test_vacants/cargamos_api_test/constants/constants.yml"
 
         cfg = Const.get_constants_file(_constants_file)
 

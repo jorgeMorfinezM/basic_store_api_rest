@@ -452,41 +452,23 @@ def get_authentication():
         return not_found()
 
 
-def decimal_formatting(value):
-    return ('%.2f' % value).rstrip('0').rstrip('.')
-
-
-def validate_status_applied(status_van):
-
-    status_valid = False
-
-    cfg = get_config_constant_file()
-
-    list_van_status_applied = cfg['VAN_STATUS_CHECK_LIST']
-
-    if status_van in list_van_status_applied:
-        status_valid = True
-
-    return status_valid
-
-
 # Define y obtiene el configurador para las constantes del sistema:
-def get_config_constant_file():
-    """Contiene la obtencion del objeto config
-        para setear datos de constantes en archivo
-        configurador
-
-    :rtype: object
-    """
-    # PROD
-    _constants_file = "/app/constants/constants.yml"
-
-    # TEST
-    # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
-
-    cfg = Const.get_constants_file(_constants_file)
-
-    return cfg
+# def get_config_constant_file():
+#     """Contiene la obtencion del objeto config
+#         para setear datos de constantes en archivo
+#         configurador
+#
+#     :rtype: object
+#     """
+#     # PROD
+#     _constants_file = "/app/constants/constants.yml"
+#
+#     # TEST
+#     # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
+#
+#     cfg = Const.get_constants_file(_constants_file)
+#
+#     return cfg
 
 
 if __name__ == "__main__":

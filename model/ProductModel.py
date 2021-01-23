@@ -10,7 +10,7 @@ __history__ = """ """
 __version__ = "1.1.A19.1 ($Rev: 1 $)"
 
 
-from constants.constants import Constants
+from utilities.Utility import Utility as Util
 import uuid
 
 
@@ -283,9 +283,26 @@ class ProductModel:
         cls.product_weight = product_weight
 
     def valid_product_published(self, published):
+        is_published = False
         if published is self.product_published:
-            return True
+            is_published = True
+        return is_published
 
     def valid_manage_stock(self, manage_stock):
+        valid_manage_stock = False
         if manage_stock is self.product_manage_stock:
-            return True
+            valid_manage_stock = True
+        return valid_manage_stock
+
+    @staticmethod
+    def validate_status_applied(status_product):
+        status_valid = False
+
+        cfg = Util.get_config_constant_file()
+
+        list_product_status_applied = cfg['PRODUCT_STATUS_CHECK_LIST']
+
+        if status_product in list_product_status_applied:
+            status_valid = True
+
+        return status_valid
