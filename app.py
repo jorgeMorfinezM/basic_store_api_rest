@@ -19,10 +19,11 @@ from flask import Flask, jsonify, render_template, json, request
 from flask_jwt_extended import JWTManager
 
 from auth_controller.api_authentication import *
-from constants.constants import Constants as Const
+from utilities.Utility import Utility as Util
 from logger_controller.logger_control import *
 from db_controller.database_backend import *
 from model.StoreModel import StoreModel
+from model.ProductModel import ProductModel
 
 
 logger = configure_ws_logger()
@@ -57,31 +58,27 @@ def activate_job():
 @app.route('/')
 def main():
 
-    return render_template('api_manage_van.html')
+    return render_template('api_manage_ecommerce.html')
 
 
-def get_van_by_status(status_van):
+def get_stock_all_stores_by_product(product_sku):
 
-    van_list = []
+    stock_list = []
 
-    cfg = get_config_constant_file()
+    stock_in_stores = select_all_stock_in_product(product_sku)
 
-    table_name = cfg['DB_OBJECTS']['VAN_TABLE']
+    stock_list = json.loads(stock_in_stores)
 
-    van_status_list = select_van_by_status(table_name, status_van)
+    if stock_list:
 
-    van_list = json.loads(van_status_list)
+        logger.info('List Stock in all Stores by SKU: {}: {}: '.format(product_sku, stock_list))
 
-    if van_list:
-
-        logger.info('Van list by Status: {}: {}: '.format(status_van, van_list))
-
-        return van_list
+        return stock_list
 
 
-@app.route('/api/urbvan/vehicle/van/status/',  methods=['GET', 'OPTIONS'])
+@app.route('/api/ecommerce/stock/total/',  methods=['GET', 'OPTIONS'])
 @jwt_required
-def endpoint_list_van_by_status():
+def endpoint_list_stock_all_stores():
 
     headers = request.headers
     auth = headers.get('Authorization')
@@ -101,13 +98,11 @@ def endpoint_list_van_by_status():
 
             data = request.get_json(force=True)
 
-            status_van = data['status']
+            product_sku = data['product_sku']
 
-            json_data = []
+            json_data = get_stock_all_stores_by_product(product_sku)
 
-            json_data = get_van_by_status(status_van)
-
-            if not status_van:
+            if not product_sku:
                 return request_conflict()
 
             return json.dumps(json_data)
@@ -116,136 +111,176 @@ def endpoint_list_van_by_status():
             return not_found()
 
 
-def get_van_by_uuid(uuid_van):
+def get_stock_by_store_by_product(product_sku, store_code):
 
-    van_list = []
+    stock_list = []
 
-    cfg = get_config_constant_file()
+    stock_in_store = select_stock_in_product(store_code, product_sku)
 
-    table_name = cfg['DB_OBJECTS']['VAN_TABLE']
+    stock_list = json.loads(stock_in_store)
 
-    van_uuid_list = select_van_by_uuid(table_name, uuid_van)
+    if stock_list:
 
-    van_list = json.loads(van_uuid_list)
+        logger.info('List Stock in one Store: {} by SKU: {}: {}: '.format(store_code, product_sku, stock_list))
 
-    if van_list:
-
-        logger.info('Van list by UUID: {}: {}: '.format(uuid_van, van_list))
-
-        return van_list
+        return stock_list
 
 
-def update_van_data_endpoint(uuid_van, plates_van, economic_number_van, seats_van, status_van):
-    van_updated = dict()
+@app.route('/api/ecommerce/stock/detail/',  methods=['GET', 'OPTIONS'])
+@jwt_required
+def endpoint_detailed_stock_by_sku():
 
-    cfg = get_config_constant_file()
+    headers = request.headers
+    auth = headers.get('Authorization')
 
-    table_name = cfg['DB_OBJECTS']['VAN_TABLE']
+    if not auth and 'Bearer' not in auth:
+        return request_unauthorized()
+    else:
+        if request.method == 'OPTIONS':
+            headers = {
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                'Access-Control-Max-Age': 1000,
+                'Access-Control-Allow-Headers': 'origin, x-csrftoken, content-type, accept',
+            }
+            return '', 200, headers
 
-    van_updated = update_store_data(table_name, uuid_van, plates_van, economic_number_van, seats_van, status_van)
+        elif request.method == 'GET':
 
-    return van_updated
+            data = request.get_json(force=True)
 
+            product_sku = data['product_sku']
+            store_code = data['store_code']
 
-def delete_van_vehicle(uuid_van, plate_van):
+            json_data = get_stock_by_store_by_product(product_sku, store_code)
 
-    van_delete_msg = []
+            if not product_sku:
+                return request_conflict()
 
-    cfg = get_config_constant_file()
+            return json.dumps(json_data)
 
-    table_name = cfg['DB_OBJECTS']['VAN_TABLE']
-
-    van_delete_response = delete_store_data(table_name, uuid_van, plate_van)
-
-    van_delete_msg = json.loads(van_delete_response)
-
-    if len(van_delete_msg) != 0:
-        logger.info('Van deleted: %s', str(van_delete_msg))
-
-        return van_delete_msg
+        else:
+            return not_found()
 
 
-def get_economic_number_van(economic_number_part):
-    conn = None
-    economic_number_van = None
+def add_stock_by_store_by_product(stock, product_sku, store_code):
+
+    stock_add = []
+
+    stock_in_product = update_product_store_stock(stock, product_sku, store_code)
+
+    stock_add = json.loads(stock_in_product)
+
+    if stock_add:
+
+        logger.info('Add Stock: {} in one Product: {} by Store: {}: {}: '.format(stock,
+                                                                                 product_sku,
+                                                                                 store_code,
+                                                                                 stock_add))
+
+        return stock_add
+
+
+@app.route('/api/ecommerce/stock/add/',  methods=['POST', 'OPTIONS'])
+@jwt_required
+def endpoint_update_stock():
+
+    headers = request.headers
+    auth = headers.get('Authorization')
+
+    if not auth and 'Bearer' not in auth:
+        return request_unauthorized()
+    else:
+        if request.method == 'OPTIONS':
+            headers = {
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                'Access-Control-Max-Age': 1000,
+                'Access-Control-Allow-Headers': 'origin, x-csrftoken, content-type, accept',
+            }
+            return '', 200, headers
+
+        elif request.method == 'GET':
+
+            data = request.get_json(force=True)
+
+            stock = data['stock']
+            product_sku = data['product_sku']
+            store_code = data['store_code']
+
+            json_data = add_stock_by_store_by_product(stock, product_sku, store_code)
+
+            if not product_sku and not store_code and not stock:
+                return request_conflict()
+
+            return json.dumps(json_data)
+
+        else:
+            return not_found()
+
+
+def manage_store_requested_data(store_data):
+
+    store_data_manage = []
+
+    store_model_db = StoreModelDb()
 
     try:
 
-        conn = session_to_db()
+        store_code = store_data.get("store_code")
+        store_name = store_data.get("store_name")
+        store_street_address = store_data("street_address")
+        store_external_number = store_data("external_number_address")
+        store_suburb_address = store_data.get("suburb_address")
+        store_city_address = store_data.get("city_address")
+        store_country_address = store_data.get("country_address")
+        store_zippostal_code = store_data.get("zip_postal_code_address")
+        store_min_inventory = store_data.get("minimum_inventory")
 
-        economic_number_consecutive = get_nextval_economic_number_van(conn)
+        store_obj = StoreModel(store_code, store_name, store_external_number, store_street_address, store_suburb_address,
+                               store_city_address, store_country_address, store_zippostal_code, store_min_inventory)
 
-        economic_number_van = economic_number_part + '-' + economic_number_consecutive
+        store_data = store_model_db.manage_store_data(store_obj)
 
-        regex_eco_num = r"^(\w{2})-(\d{4})$"
+        store_data_manage = json.loads(store_data)
 
-        math_part_eco_num = re.match(regex_eco_num, economic_number_van, re.M | re.I)
+        if len(store_data_manage) != 0:
+            logger.info('Response Store Data: %s', str(store_data_manage))
 
-        if math_part_eco_num:
-            return economic_number_van
-
-    except SQLAlchemyError as error:
-        raise mvc_exc.ConnectionError(
-            'Can\'t connect to database, verify data connection.\nOriginal Exception raised: {}'.format(error)
-        )
-    finally:
-        disconnect_from_db(conn)
-
-
-def manage_van_requested_data(data_van):
-
-    van_data_response = []
-
-    urbvan_obj = StoreModelDb()
-
-    try:
-
-        economic_number_van = str()
-
-        # uuid_van = data_van['uuid_van']
-        plates_van = data_van['plate_van']
-        economic_number_part_van = data_van['economic_number']
-        seats_van = data_van['seats_number']
-        status_van = data_van['status']
-
-        regex_part_eco_num = r"^(\w{2})"
-
-        math_part_eco_num = re.match(regex_part_eco_num, economic_number_part_van, re.M | re.I)
-
-        if math_part_eco_num:
-
-            economic_number_van = get_economic_number_van(economic_number_part_van)
-
-            van_obj = StoreModel(plates_van, economic_number_van, seats_van, status_van)
-
-            if van_obj.validate_status_apply(status_van):
-
-                uuid_van = van_obj.get_uuid_van()
-
-                response_order = urbvan_obj.manage_store_data(uuid_van,
-                                                              plates_van,
-                                                              economic_number_van,
-                                                              seats_van,
-                                                              status_van)
-
-                van_data_response = json.loads(response_order)
-
-                if len(van_data_response) != 0:
-                    logger.info('Response Van Data: %s', str(van_data_response))
-
-                    return van_data_response
+            return store_data_manage
 
     except SQLAlchemyError as error:
         raise mvc_exc.ConnectionError(
             'Can\'t connect to database, verify data connection to "{}".\nOriginal Exception raised: {}'.format(
-                urbvan_obj.__tablename__, error
+                store_model_db.__tablename__, error
             )
         )
 
 
-@app.route('/api/urbvan/vehicle/van/', methods=['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'])
+def get_stores_by_code(store_code):
+
+    store_list_data = {}
+
+    store_get_list_data = select_by_store_code(store_code)
+
+    store_list_data = json.loads(store_get_list_data)
+
+    if store_list_data:
+
+        logger.info('List Stores data by code: {}: {}: '.format(store_code, store_list_data))
+
+        return store_list_data
+
+
+def update_store_data_endpoint(store_dict_input):
+    store_updated = dict()
+
+    store_updated = update_store_data(store_dict_input)
+
+    return store_updated
+
+
+@app.route('/api/ecommerce/manage/store/', methods=['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'])
 @jwt_required
-def endpoint_processing_van_data():
+def endpoint_processing_store_data():
 
     headers = request.headers
     auth = headers.get('Authorization')
@@ -268,92 +303,282 @@ def endpoint_processing_van_data():
             if not data or str(data) is None:
                 return request_conflict()
 
-            logger.info('Data Json Integrador to Manage on DB: %s', str(data))
+            logger.info('Data Json Store to Manage on DB: %s', str(data))
 
-            json_van_response = manage_van_requested_data(data)
+            json_store_response = manage_store_requested_data(data)
 
-            return json.dumps(json_van_response)
+            return json.dumps(json_store_response)
 
         elif request.method == 'GET':
             data = request.get_json(force=True)
 
-            uuid_van = data['uuid_van']
-
-            logger.info('List Van by UUID: %s', 'UUID_Van: {}'.format(uuid_van))
+            store_code = data['store_code']
 
             json_data = []
 
-            if not uuid_van:
+            json_data = get_stores_by_code(store_code)
+
+            logger.info('Stores List data by Code: %s', str(json_data))
+
+            if not store_code:
                 return request_conflict()
-
-            json_data = get_van_by_uuid(uuid_van)
-
-            logger.info('Van by UUID Info: %s', json_data)
 
             return json.dumps(json_data)
 
         elif request.method == 'PUT':
 
-            data_van = request.get_json(force=True)
+            data_store = request.get_json(force=True)
 
-            if not data_van:
+            store_code = data_store.get("store_code")
+            store_name = data_store.get("store_name")
+
+            if not data_store:
                 return request_conflict()
-
-            status_valid = False
-            economic_van_number = None
-
-            uuid_van = data_van['uuid_van']
-            plates_van = data_van['plate_van']
-            economic_number_part_van = data_van['economic_number']
-            seats_van = data_van['seats_number']
-            status_van = data_van['status']
-
-            regex_part_eco_num = r"^(\w{2})"
-
-            math_part_eco_num = re.match(regex_part_eco_num, economic_number_part_van, re.M | re.I)
-
-            if math_part_eco_num:
-
-                economic_van_number = get_economic_number_van(economic_number_part_van)
-
-                status_valid = validate_status_applied(status_van)
-
-            logger.info('Data to update Van: %s',
-                        "UUID Van: {0}, Plate Van: {1}, Economic Number Van: {2}".format(uuid_van,
-                                                                                         plates_van,
-                                                                                         economic_van_number))
 
             json_data = dict()
 
-            if status_valid:
+            json_data = update_store_data_endpoint(data_store)
 
-                json_data = update_van_data_endpoint(uuid_van, plates_van, economic_van_number, seats_van, status_van)
+            logger.info('Data to update Store: %s',
+                        "Store code: {0}, Store name: {1}".format(store_code, store_name))
 
-                logger.info('Van updated Info: %s', str(json_data))
+            logger.info('Store updated Info: %s', str(json_data))
 
-                return json_data
+            return json_data
 
         elif request.method == 'DELETE':
             data = request.get_json(force=True)
 
-            uuid_van = data['uuid_van']
-            plate_van = data['plate_van']
+            store_code = data['store_code']
 
-            logger.info('Van data to Delete: %s', 'UUID_Van: {}, Plate_Van: {}'.format(uuid_van, plate_van))
+            logger.info('Store to Delete: %s', 'Store Code: {}'.format(store_code))
 
             json_data = []
 
-            if not uuid_van and not plate_van:
+            if not store_code and not Util.validate_store_code_syntax(store_code):
                 return request_conflict()
 
-            json_data = delete_van_vehicle(uuid_van, plate_van)
+            json_data = delete_store_data(store_code)
 
-            logger.info('Van delete: %s', json_data)
+            logger.info('Store deleted: %s', json_data)
 
             return json.dumps(json_data)
 
         else:
             return not_found()
+
+
+def manage_product_requested_data(product_data):
+
+    product_data_manage = []
+
+    product_model_db = ProductModelDb()
+
+    try:
+
+        product_sku = product_data.get("product_sku")
+        product_unspc = product_data.get("product_unspc")
+        product_brand = product_data.get("product_brand")
+        category_id = product_data.get("category_id")
+        parent_category_id = product_data.get("parent_category_id")
+        product_uom = product_data.get("unit_of_measure")
+        product_stock = product_data.get("product_stock")
+        store_code = product_data.get("product_store_code")
+        product_name = product_data.get("product_name")
+        product_title = product_data.get("product_title")
+        product_long_description = product_data.get("product_long_description")
+        product_photo = product_data.get("product_photo")
+        product_price = product_data.get("product_price")
+        product_tax = product_data.get("product_tax")
+        product_currency = product_data.get("product_currency")
+        product_status = product_data.get("product_status")
+        product_published = product_data.get("product_published")
+        manage_stock = product_data.get("product_manage_stock")
+        product_length = product_data.get("product_length")
+        product_width = product_data.get("product_width")
+        product_height = product_data.get("product_height")
+        product_weight = product_data.get("product_weight")
+
+        product_obj = ProductModel(product_sku, product_unspc, product_brand, category_id, parent_category_id,
+                                   product_uom, product_stock, store_code, product_name, product_title,
+                                   product_long_description, product_photo, product_price, product_tax, product_currency,
+                                   product_status, product_published, manage_stock, product_length, product_width,
+                                   product_height, product_weight)
+
+        data_product = product_model_db.manage_product_data(product_obj)
+
+        product_data_manage = json.loads(data_product)
+
+        if len(product_data_manage) != 0:
+            logger.info('Response Product Data: %s', str(product_data_manage))
+
+            return product_data_manage
+
+    except SQLAlchemyError as error:
+        raise mvc_exc.ConnectionError(
+            'Can\'t connect to database, verify data connection to "{}".\nOriginal Exception raised: {}'.format(
+                product_model_db.__tablename__, error
+            )
+        )
+
+
+def get_products_by_sku(product_sku):
+
+    product_list_data = {}
+
+    product_get_list_data = select_by_product_sku(product_sku)
+
+    product_list_data = json.loads(product_get_list_data)
+
+    if product_list_data:
+
+        logger.info('List Product data by SKU: {}: {}: '.format(product_sku, product_list_data))
+
+        return product_list_data
+
+
+@app.route('/api/ecommerce/manage/product/', methods=['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'])
+@jwt_required
+def endpoint_processing_product_data():
+
+    headers = request.headers
+    auth = headers.get('Authorization')
+
+    if not auth and 'Bearer' not in auth:
+        return request_unauthorized()
+    else:
+        if request.method == 'OPTIONS':
+            headers = {
+                'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
+                'Access-Control-Max-Age': 1000,
+                'Access-Control-Allow-Headers': 'origin, x-csrftoken, content-type, accept',
+            }
+            return '', 200, headers
+
+        elif request.method == 'POST':
+
+            data = request.get_json(force=True)
+
+            if not data or str(data) is None:
+                return request_conflict()
+
+            logger.info('Data Json Store to Manage on DB: %s', str(data))
+
+            json_store_response = manage_product_requested_data(data)
+
+            return json.dumps(json_store_response)
+
+        elif request.method == 'GET':
+            data = request.get_json(force=True)
+
+            product_sku = data['product_sku']
+
+            json_data = []
+
+            json_data = get_products_by_sku(product_sku)
+
+            logger.info('Product List data by SKU: %s', str(json_data))
+
+            if not product_sku:
+                return request_conflict()
+
+            return json.dumps(json_data)
+
+        elif request.method == 'PUT':
+
+            data_store = request.get_json(force=True)
+
+            product_sku = data_store.get('product_sku')
+            product_stock = data_store.get('product_stock')
+            product_store_code = data_store.get('product_store_code')
+            product_name = data_store.get('product_name')
+
+            if not data_store:
+                return request_conflict()
+
+            json_data = dict()
+
+            json_data = update_product_data(data_store)
+
+            logger.info('Data to update Product: %s',
+                        "Product SKU: {0}, "
+                        "Product Name: {1}, "
+                        "Product Store Code: {2}, "
+                        "Product Stock: {3}".format(product_sku, product_name, product_store_code, product_stock))
+
+            logger.info('Product updated Info: %s', str(json_data))
+
+            return json_data
+
+        elif request.method == 'DELETE':
+            data = request.get_json(force=True)
+
+            store_code = data['store_code']
+            product_sku = data['product_sku']
+
+            logger.info('Store to Delete: %s', 'Store Code: {}'.format(store_code))
+
+            json_data = []
+
+            if not store_code and not Util.validate_store_code_syntax(store_code):
+                return request_conflict()
+
+            json_data = delete_product_data(product_sku, store_code)
+
+            logger.info('Product deleted: %s', json_data)
+
+            return json.dumps(json_data)
+
+        else:
+            return not_found()
+
+
+@app.route('/api/ecommerce/authorization/', methods=['POST', 'OPTIONS'])
+def get_authentication():
+
+    json_token = {}
+
+    if request.method == 'OPTIONS':
+        headers = {
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+            'Access-Control-Max-Age': 1000,
+            'Access-Control-Allow-Headers': 'origin, x-csrftoken, content-type, accept',
+        }
+        return '', 200, headers
+
+    elif request.method == 'POST':
+        data = request.get_json(force=True)
+
+        user_name = data['username']
+        password = data['password']
+        rfc = data['rfc_client']
+
+        regex_email = r"^[(a-z0-9\_\-\.)]+@[(a-z0-9\_\-\.)]+\.[(a-z)]{2,15}$"
+
+        regex_passwd = r"^[(A-Za-z0-9\_\-\.\$\#\&\*)(A-Za-z0-9\_\-\.\$\#\&\*)]+"
+
+        regex_rfc = r"^([A-ZÑ&]{3,4})?(?:-?)?(\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))?(?:-?)?([A-Z\d]{2})([A\d])$"
+
+        match_email = re.match(regex_email, user_name, re.M | re.I)
+
+        match_passwd = re.match(regex_passwd, password, re.M | re.I)
+
+        match_rfc = re.match(regex_rfc, rfc, re.M | re.I)
+
+        if match_email and match_rfc and match_passwd:
+
+            password = password + '_' + rfc
+
+            json_token = user_registration(user_name, password)
+
+            json_token = json.dumps(json_token)
+
+            return json_token
+
+        else:
+            return request_conflict()
+    else:
+        return not_found()
 
 
 @app.errorhandler(404)
@@ -406,69 +631,6 @@ def request_conflict(error=None):
     resp.status_code = 409
 
     return resp
-
-
-@app.route('/api/urbvan/authorization/', methods=['POST', 'OPTIONS'])
-def get_authentication():
-
-    json_token = {}
-
-    if request.method == 'OPTIONS':
-        headers = {
-            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Max-Age': 1000,
-            'Access-Control-Allow-Headers': 'origin, x-csrftoken, content-type, accept',
-        }
-        return '', 200, headers
-
-    elif request.method == 'POST':
-        data = request.get_json(force=True)
-
-        user_name = data['username']
-        password = data['password']
-        rfc = data['rfc_client']
-
-        regex_email = r"^[(a-z0-9\_\-\.)]+@gmail.com"
-
-        regex_passwd = r"^[(A-Za-z0-9\_\-\.\$\#\&\*)(A-Za-z0-9\_\-\.\$\#\&\*)]+"
-
-        match_email = re.match(regex_email, user_name, re.M | re.I)
-
-        math_passwd = re.match(regex_passwd, password, re.M | re.I)
-
-        if match_email and 'MOMJ880813' in rfc and math_passwd:
-
-            password = password + '_' + rfc
-
-            json_token = user_registration(user_name, password)
-
-            json_token = json.dumps(json_token)
-
-            return json_token
-
-        else:
-            return request_conflict()
-    else:
-        return not_found()
-
-
-# Define y obtiene el configurador para las constantes del sistema:
-# def get_config_constant_file():
-#     """Contiene la obtencion del objeto config
-#         para setear datos de constantes en archivo
-#         configurador
-#
-#     :rtype: object
-#     """
-#     # PROD
-#     _constants_file = "/app/constants/constants.yml"
-#
-#     # TEST
-#     # _constants_file = "/home/jorgemm/Documentos/PycharmProjects/urbvan_microservice_test/constants/constants.yml"
-#
-#     cfg = Const.get_constants_file(_constants_file)
-#
-#     return cfg
 
 
 if __name__ == "__main__":

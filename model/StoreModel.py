@@ -53,9 +53,7 @@ class StoreModel:
                  city_address,
                  country_address,
                  zip_code_address,
-                 minimum_inventory,
-                 creation_date,
-                 last_update_date):
+                 minimum_inventory):
 
         self.id_store = uuid.uuid4().int
         self.store_code = code_store
@@ -67,8 +65,6 @@ class StoreModel:
         self.store_country_address = country_address
         self.store_zippostal_code = zip_code_address
         self.store_min_inventory = minimum_inventory
-        self.creation_date = creation_date
-        self.last_update_date = last_update_date
 
     # getter method
     @classmethod

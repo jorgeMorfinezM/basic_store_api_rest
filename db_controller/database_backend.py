@@ -373,36 +373,33 @@ class StoreModelDb(Base):
     creation_date = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['CREATION_DATE'], String)
     last_update_date = Column(cfg['DB_COLUMNS_DATA']['STORE_API']['LAST_UPDATE_DATE'], String)
 
-    def manage_store_data(self, id_store, name_store, code_store, street_store, ext_num_store, suburb_store,
-                          city_store, country_store, postal_code_store, minimum_stock, store_obj):
+    def manage_store_data(self, store_obj):
 
         store_data = {}
 
-        store_dict = Util.set_data_input_store_dict(id_store, code_store, name_store, street_store, ext_num_store,
-                                                    suburb_store, city_store, country_store, postal_code_store,
-                                                    minimum_stock)
+        store_dict = Util.set_data_input_store_dict(store_obj)
 
         if exists_data_row(self.__tablename__,
                            self.id_store,
                            self.id_store,
-                           id_store,
+                           store_dict.get("store_id"),
                            self.code_store,
-                           code_store):
+                           store_dict.get("store_code")):
 
             store_data = update_store_data(store_dict)
         else:
-            store_data = insert_new_store(store_obj)
+            store_data = insert_new_store(store_dict)
 
         return store_data
 
 
 # Add Store data to insert the row on the database
-def insert_new_store(store_obj: StoreModel):
+def insert_new_store(data_store):
     r"""
     Transaction to add data of a store and inserted on database.
     The data that you can insert are:
 
-    :param store_obj: Store object model to add new store data.
+    :param data_store: Store object model to add new store data.
     :return store_data_inserted: Dictionary that contains Store data inserted on db.
     """
 
@@ -422,16 +419,16 @@ def insert_new_store(store_obj: StoreModel):
         created_at = get_datenow_from_db()
         last_update_date = get_datenow_from_db()
 
-        store_id = store_obj.get_id_store()
-        store_code = store_obj.get_store_code()
-        store_name = store_obj.get_store_name()
-        store_external_number = store_obj.get_external_number()
-        store_street_address = store_obj.get_street_address()
-        store_suburb_address = store_obj.get_suburb_address()
-        store_city_address = store_obj.get_city_address()
-        store_country_address = store_obj.get_country_address()
-        store_zippostal_code = store_obj.get_zip_postal_address()
-        store_min_inventory = store_obj.get_minimum_stock()
+        store_id = data_store.get("store_id")
+        store_code = data_store.get("store_code")
+        store_name = data_store.get("store_name")
+        store_street_address = data_store("street_address")
+        store_external_number = data_store("external_number_address")
+        store_suburb_address = data_store.get("suburb_address")
+        store_city_address = data_store.get("city_address")
+        store_country_address = data_store.get("country_address")
+        store_zippostal_code = data_store.get("zip_postal_code_address")
+        store_min_inventory = data_store.get("minimum_inventory")
 
         if not Util.validate_store_code_syntax(store_code):
             logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
@@ -539,7 +536,7 @@ def update_store_data(data_store):
 
         table_name = cfg['DB_OBJECTS']['STORE_TABLE']
 
-        store_id = data_store.get("store_id")
+        # store_id = data_store.get("store_id")
         store_code = data_store.get("store_code")
         store_name = data_store.get("store_name")
         street_address = data_store("street_address")
@@ -550,14 +547,7 @@ def update_store_data(data_store):
         zip_postal_code_address = data_store.get("zip_postal_code_address")
         minimum_stock = data_store.get("minimum_inventory")
 
-        if not Util.validate_store_code_syntax(store_code):
-            logger.error('Can not read the recordset: {}, because the store code is not valid: {}'.format(store_code,
-                                                                                                          table_name))
-            raise mvc_exc.ItemNotStored(
-                'Can\'t read "{}" because it\'s not stored in table "{}. SQL Exception"'.format(
-                    store_id, table_name
-                )
-            )
+        store_id = select_store_id(store_code)
 
         # update row to database
         sql_update_store = 'UPDATE {} ' \
@@ -1046,9 +1036,12 @@ class ProductModelDb(Base):
     creation_date = Column(cfg['DB_COLUMNS_DATA']['PRODUCT_API']['CREATION_DATE'], String)
     last_update_date = Column(cfg['DB_COLUMNS_DATA']['PRODUCT_API']['LAST_UPDATE_DATE'], String)
 
-    def manage_product_data(self, product_input_dic):
+    def manage_product_data(self, product_obj):
 
         product_data = {}
+        product_input_dic = {}
+
+        product_input_dic = Util.set_data_input_product_dict(product_obj)
 
         product_sku = product_input_dic.get("product_sku")
         product_store_code = product_input_dic.get("product_store_code")
@@ -1296,11 +1289,8 @@ def update_product_data(data_product):
         product_table = cfg['DB_OBJECTS']['PRODUCT_TABLE']
 
         product_sku = data_product.get('product_sku')
-        product_unspc = data_product.get('product_unspc')
-        product_brand = data_product.get('product_brand')
         category_id = data_product.get('category_id')
         parent_category_id = data_product.get('parent_category_id')
-        unit_of_measure = data_product.get('unit_of_measure')
         product_stock = data_product.get('product_stock')
         product_store_code = data_product.get('product_store_code')
         product_name = data_product.get('product_name')
@@ -1313,10 +1303,6 @@ def update_product_data(data_product):
         product_status = data_product.get('product_status')
         product_published = data_product.get('product_published')
         manage_stock = data_product.get('product_manage_stock')
-        product_length = data_product.get('product_length')
-        product_width = data_product.get('product_width')
-        product_height = data_product.get('product_height')
-        product_weight = data_product.get('product_weight')
 
         product_store_id = select_store_id(product_store_code)
         product_id = select_product_id(product_sku, product_store_id)
@@ -1324,11 +1310,8 @@ def update_product_data(data_product):
         # update row to database
         sql_update_product = ' UPDATE {} ' \
                              ' SET product_sku=%s, ' \
-                             '     product_unspc=%s, ' \
-                             '     product_brand=%s, ' \
                              '     category_id=%s, ' \
                              '     parent_category_id=%s, ' \
-                             '     unit_of_measure=%s, ' \
                              '     product_stock=%s, ' \
                              '     product_name=%s, ' \
                              '     product_title=%s, ' \
@@ -1339,22 +1322,15 @@ def update_product_data(data_product):
                              '     product_currency=%s, ' \
                              '     product_status=%s, ' \
                              '     product_published=%s, ' \
-                             '     product_manage_stock=%s, ' \
-                             '     product_length=%s, ' \
-                             '     product_width=%s, ' \
-                             '     product_height=%s, ' \
-                             '     product_weight=%s, ' \
+                             '     product_manage_stock=%s ' \
                              '     last_update_date=%s' \
                              ' WHERE product_id={} AND product_store_id={}'.format(product_table,
                                                                                    product_id,
                                                                                    product_store_id)
 
         cursor.execute(sql_update_product, (product_sku,
-                                            product_unspc,
-                                            product_brand,
                                             category_id,
                                             parent_category_id,
-                                            unit_of_measure,
                                             product_stock,
                                             product_name,
                                             product_title,
@@ -1366,10 +1342,6 @@ def update_product_data(data_product):
                                             product_status,
                                             product_published,
                                             manage_stock,
-                                            product_length,
-                                            product_width,
-                                            product_height,
-                                            product_weight,
                                             last_update_date,))
 
         conn.commit()
@@ -1386,11 +1358,8 @@ def update_product_data(data_product):
             "Product": {
                 "IdProduct": product_id,
                 "SKUProduct": product_sku,
-                "UNSPC": product_unspc,
                 "NameProduct": product_name,
                 "TitleProduct": product_title,
-                "BrandProduct": product_brand,
-                "UOMProduct": unit_of_measure,
                 "CategoryIdProduct": category_id,
                 "ParentCategoryIdProduct": parent_category_id,
                 "StockProduct": product_stock,
@@ -1405,12 +1374,6 @@ def update_product_data(data_product):
                 "StatusProduct": product_status,
                 "PublishedProduct": product_published,
                 "ManageStockProduct": manage_stock,
-                "Volumetry": {
-                    "LengthProduct": product_length,
-                    "WidthProduct": product_width,
-                    "HeightProduct": product_height,
-                    "WeightProduct": product_weight,
-                },
                 "LastUpdateDate": last_update_date,
                 "Message": "Product data Updated Successful"
             }
@@ -1421,11 +1384,8 @@ def update_product_data(data_product):
                 "Product": {
                     "IdProduct": product_id,
                     "SKUProduct": product_sku,
-                    "UNSPC": product_unspc,
                     "NameProduct": product_name,
                     "TitleProduct": product_title,
-                    "BrandProduct": product_brand,
-                    "UOMProduct": unit_of_measure,
                     "CategoryIdProduct": category_id,
                     "ParentCategoryIdProduct": parent_category_id,
                     "StockProduct": product_stock,
@@ -1440,12 +1400,6 @@ def update_product_data(data_product):
                     "StatusProduct": product_status,
                     "PublishedProduct": product_published,
                     "ManageStockProduct": manage_stock,
-                    "Volumetry": {
-                        "LengthProduct": product_length,
-                        "WidthProduct": product_width,
-                        "HeightProduct": product_height,
-                        "WeightProduct": product_weight,
-                    },
                     "LastUpdateDate": last_update_date,
                     "Message": "Product not Updated"
                 }

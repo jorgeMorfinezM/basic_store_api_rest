@@ -54,7 +54,7 @@ class ProductModel:
     parent_category_id = int()
     unit_of_measure = str()
     product_stock = int()
-    product_store_id = str()
+    product_store_code = str()
     product_name = str()
     product_title = str()
     product_long_description = str()
@@ -72,8 +72,8 @@ class ProductModel:
     creation_date = str()
     last_update_date = str()
 
-    def __init__(self, sku, product_unspc, brand, category_id, parent_cat_id, uom, stock, store_id, name, title, long_desc,
-                 photo, price, tax, currency, status, published, manage_stock, length, width, height, weight):
+    def __init__(self, sku, product_unspc, brand, category_id, parent_cat_id, uom, stock, store_code, name, title,
+                 long_desc, photo, price, tax, currency, status, published, manage_stock, length, width, height, weight):
         self.product_id = uuid.uuid4().int
         self.product_sku = sku
         self.product_unspc = product_unspc
@@ -82,7 +82,7 @@ class ProductModel:
         self.parent_category_id = parent_cat_id
         self.unit_of_measure = uom
         self.product_stock = stock
-        self.product_store_id = store_id
+        self.product_store_code = store_code
         self.product_name = name
         self.product_title = title
         self.product_long_description = long_desc
@@ -163,12 +163,12 @@ class ProductModel:
         cls.product_stock = product_stock
 
     @classmethod
-    def get_product_store_id(cls):
-        return cls.product_store_id
+    def get_product_store_code(cls):
+        return cls.product_store_code
 
     @classmethod
-    def set_product_store_id(cls, product_store_id):
-        cls.product_store_id = product_store_id
+    def set_product_store_code(cls, product_store_code):
+        cls.product_store_code = product_store_code
 
     @classmethod
     def get_product_name(cls):

@@ -42,29 +42,59 @@ class Utility:
         return address_store
 
     @staticmethod
-    def set_data_input_store_dict(id_store, code_store, name_store, street_store, ext_num_store, suburb_store,
-                                  city_store, country_store, postal_code_store, minimum_stock):
+    def set_data_input_store_dict(store_obj):
+
+        store_id = store_obj.get_id_store()
+        store_code = store_obj.get_store_code()
+        store_name = store_obj.get_store_name()
+        store_external_number = store_obj.get_external_number()
+        store_street_address = store_obj.get_street_address()
+        store_suburb_address = store_obj.get_suburb_address()
+        store_city_address = store_obj.get_city_address()
+        store_country_address = store_obj.get_country_address()
+        store_zippostal_code = store_obj.get_zip_postal_address()
+        store_min_inventory = store_obj.get_minimum_stock()
+
         store_dict = {
-            "store_id": id_store,
-            "store_code": code_store,
-            "store_name": name_store,
-            "street_address": street_store,
-            "external_number_address": ext_num_store,
-            "suburb_address": suburb_store,
-            "city_address": city_store,
-            "country_address": country_store,
-            "zip_postal_code_address": postal_code_store,
-            "minimum_inventory": minimum_stock,
+            "store_id": store_id,
+            "store_code": store_code,
+            "store_name": store_name,
+            "street_address": store_external_number,
+            "external_number_address": store_street_address,
+            "suburb_address": store_suburb_address,
+            "city_address": store_city_address,
+            "country_address": store_country_address,
+            "zip_postal_code_address": store_zippostal_code,
+            "minimum_inventory": store_min_inventory,
         }
 
         return json.dumps(store_dict)
 
     @staticmethod
-    def set_data_input_product_dict(product_sku, product_unspc, product_brand, product_category_id,
-                                    product_parent_category_id, product_uom, product_stock, product_store_code,
-                                    product_name, product_title, product_long_description, product_photo, product_price,
-                                    product_tax_price, product_currency, product_status, product_published,
-                                    product_manage_stock, product_length, product_width, product_height, product_weight):
+    def set_data_input_product_dict(product_obj):
+
+        product_sku = product_obj.get_product_sku()
+        product_unspc = product_obj.get_product_unspc()
+        product_brand = product_obj.get_product_brand()
+        product_category_id = product_obj.get_product_category_id()
+        product_parent_category_id = product_obj.get_product_parent_cat_id()
+        product_uom = product_obj.get_product_uom()
+        product_stock = product_obj.get_product_stock()
+        product_store_code = product_obj.get_product_store_code()
+        product_name = product_obj.get_product_name()
+        product_title = product_obj.get_product_title()
+        product_long_description = product_obj.get_product_long_desc()
+        product_photo = product_obj.get_product_photo()
+        product_price = product_obj.get_product_price()
+        product_tax_price = product_obj.get_product_tax()
+        product_currency = product_obj.get_product_currency()
+        product_status = product_obj.get_product_status()
+        product_published = product_obj.get_product_published()
+        product_manage_stock = product_obj.get_product_manage_stock()
+        product_length = product_obj.get_product_length()
+        product_width = product_obj.get_product_width()
+        product_height = product_obj.get_product_height()
+        product_weight = product_obj.get_product_weight()
 
         product_dict = {
             'product_sku': product_sku,

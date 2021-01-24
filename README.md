@@ -6,7 +6,7 @@ This README sets the use of this application to deploy the microservice API Rest
 ### What is this application for? ###
 
 * Management of Cargamos E-Commerce data on a database.
-  Search, Create, Update and Delete stock and stores data on database. 
+  Search, Create, Update and Delete product stock and stores data on database. 
 * Version: v.1.1.A18.5
 * [API Microservice Documentation](https://cargamos-api-test.herokuapp.com/)
 
