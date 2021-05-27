@@ -11,9 +11,9 @@ class TestManageStock(BaseCase):
         self.assertEqual(response.status_code, 200)
 
     def stock_list_total(self):
-        username = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_#11388"
-        rfc_client = "MOMJ880813"
+        username = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc_client = "RFC_WITH_OMOCLAVE"
 
         auth_payload = json.dumps({
             "username": username,
