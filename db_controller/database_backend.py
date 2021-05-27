@@ -8,12 +8,12 @@ Each one of the CRUD operations should be able to open a database connection if
 there isn't already one available (check if there are any issues with this).
 
 Documentation:
-    About the Van data on the database to generate CRUD operations from endpoint of the API:
+    About the Basic Product Store data on the database to generate CRUD operations from endpoint of the API:
     - Insert Store data
     - Update Store data
     - Delete Store data
     - Search Store data by ID
-    - Search Van data by Status
+    - Search Store data by Status
 
     About the User to authenticate request endpoints on the API adding security to the operations:
     - Validate user data
