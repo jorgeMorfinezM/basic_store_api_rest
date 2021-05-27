@@ -17,9 +17,9 @@ from tests.BaseCase import BaseCase
 class TestManageInvStock(BaseCase):
 
     def get_token_auth_api(self):
-        username = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_#11388"
-        rfc_client = "MOMJ880813RQ7"
+        username = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc_client = "RFC_WITH_OMOCLAVE"
 
         auth_payload = json.dumps({
             "username": username,
@@ -61,29 +61,8 @@ class TestManageInvStock(BaseCase):
 
         print("Response endpoint: ", list_stock_response)
 
-        # Then
-        # "SKU": sku_product,
-        # "ProductStock": {
-        #     "CodeStore": code_store,
-        #     "NameStore": name_store,
-        #     "Stock": stock_product,
-        # }
-        # self.assertEqual(movie_payload['name'], added_movie['name'])
-        # self.assertEqual(movie_payload['casts'], added_movie['casts'])
-        # self.assertEqual(movie_payload['genres'], added_movie['genres'])
-        # self.assertEqual(user_id, added_movie['added_by']['$oid'])
         self.assertEqual(200, response_stock.status_code)
         self.assertEqual(str, type(list_stock_response["SKU"]))
         self.assertEqual(str, type(list_stock_response["ProductStock"]["CodeStore"]))
         self.assertEqual(str, type(list_stock_response["ProductStock"]["NameStore"]))
         self.assertEqual(str, type(list_stock_response["ProductStock"]["Stock"]))
-
-    # def test_empty_response(self):
-    #
-    #     response = self.app.get('/api/ecommerce/stock/total/')
-    #
-    #     api_response = json.loads(response.get_data(as_text=True))
-    #
-    #     self.assertEqual(str, type(api_response['message']))
-    #     # self.assertEqual(str, type(api_response['code']))
-    #     self.assertNotEqual(200, response.status_code)
