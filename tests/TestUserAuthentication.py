@@ -17,9 +17,9 @@ class TestUserLogin(BaseCase):
 
     def test_successful_login(self):
 
-        user_name = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_OMOCLAVE"
         payload = json.dumps({
             "username": user_name,
             "password": password,
