@@ -17,9 +17,10 @@ class TestUserLogin(BaseCase):
 
     def test_successful_login(self):
 
-        user_name = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813RQ7"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         payload = json.dumps({
             "username": user_name,
             "password": password,
@@ -40,9 +41,10 @@ class TestUserLogin(BaseCase):
         self.assertEqual(200, response.status_code)
 
     def test_login_already_existing_user(self):
-        user_name = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813RQ7"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         payload = json.dumps({
             "username": user_name,
             "password": password,
@@ -63,9 +65,10 @@ class TestUserLogin(BaseCase):
         self.assertEqual(200, response.status_code)
 
     def test_login_with_invalid_username(self):
-        user_name = "jorgemorfinez_gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813RQ7"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         payload = json.dumps({
             "username": user_name,
             "password": password,
@@ -83,9 +86,10 @@ class TestUserLogin(BaseCase):
         self.assertEqual(int, type(token_response['error_code']))
 
     def test_login_with_invalid_password(self):
-        user_name = "jorge_morfinez_m@gmail.com"
-        password = "Ñ"
-        rfc = "MOMJ880813RQ7"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         payload = json.dumps({
             "username": user_name,
             "password": password,
@@ -103,9 +107,10 @@ class TestUserLogin(BaseCase):
         self.assertEqual(int, type(token_response['error_code']))
 
     def test_login_with_invalid_rfc_client(self):
-        user_name = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         payload = json.dumps({
             "username": user_name,
             "password": password,
@@ -123,9 +128,10 @@ class TestUserLogin(BaseCase):
         self.assertEqual(int, type(token_response['error_code']))
 
     def test_login_with_non_existing_field(self):
-        user_name = "jorge.morfinez.m@gmail.com"
-        password = "Jm$_&1388"
-        rfc = "MOMJ880813"
+        user_name = "EMAIL_USING_DOMAIN"
+        password = "PASSWORD"
+        rfc = "RFC_WITH_HOMOCLAVE"
+        
         data = "aeiou12345"
         payload = json.dumps({
             "username": user_name,
