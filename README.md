@@ -1,18 +1,18 @@
-# Cargamos Test Microservice
-API Rest Microservice - Cargamos postulation Test
+# Test Microservice
+API Rest Microservice - Basic E-Commerce (Stores and Products)
 
 This README sets the use of this application to deploy the microservice API Rest.
 
 ### What is this application for? ###
 
-* Management of Cargamos E-Commerce data on a database.
+* Management of Basic E-Commerce data on a database.
   Search, Create, Update and Delete product stock and stores data on database. 
 * Version: v.1.1.A18.5
 * [API Microservice Documentation](https://cargamos-api-test.herokuapp.com/)
 
 ### How do I get set up/deploy it? ###
 
-1.- Go to the GitHub remote repository: [GitHub remote microservice repository](https://github.com/jorgeMorfinezM/cargamos_api_test) and validate the 
+1.- Go to the GitHub remote repository: [GitHub remote microservice repository](https://github.com/jorgeMorfinezM/basic_store_api_rest) and validate the 
 steps of this Readme deployment documentation/API code and general data.
 
 2.- On your CLI (Command Line Interface) tool, clone the remote repository from the 1st step using the version control 
@@ -80,6 +80,6 @@ this link can also be found under the Settings tab, in the Domains and certifica
 ### Where do I find the documentation for the App? ###
 
 * [Repo owner or admin](mailto:jorge.morfinez.m@gmail.com) 
-* [Repository Workspace](https://github.com/jorgeMorfinezM/cargamos_api_test)
+* [Repository Workspace](https://github.com/jorgeMorfinezM/basic_store_api_rest)
 * [API Use Documentation](https://cargamos-api-test.herokuapp.com/)
 * [API Design Documentation](shorturl.at/nsMSX)
